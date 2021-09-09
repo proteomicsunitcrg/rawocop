@@ -15,7 +15,7 @@
         <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="126.593" Margin="22.5,24,0,0" VerticalAlignment="Top" Width="695.5" Grid.RowSpan="2"/>
         <TextBox x:Name="tbMonitoredFolder" TabIndex="4" HorizontalAlignment="Left" Height="22" Margin="108.88,13.593,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="316.12" Grid.Row="1"/>
         <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Margin="27.712,14.593,0,0" TextWrapping="Wrap" Text="Local folder" VerticalAlignment="Top" Grid.Row="1"/>
-        <Button x:Name="bStartSync" TabIndex="6" Content="START backuping" HorizontalAlignment="Left" Margin="552.5,132.999,0,0" VerticalAlignment="Top" Width="155.5" Height="59.5" Grid.Row="1"/>
+        <Button x:Name="bStartSync" TabIndex="6" Content="START" HorizontalAlignment="Left" Margin="552.5,132.999,0,0" VerticalAlignment="Top" Width="155.5" Height="59.5" Grid.Row="1"/>
         <Button x:Name="bStopSync" Content="Stop" HorizontalAlignment="Left" Margin="552.5,206.299,0,0" VerticalAlignment="Top" Width="155.5" Grid.Row="1" Height="27.294"/>
         <ListBox x:Name="lbLog" HorizontalAlignment="Left" Height="258" Margin="41.334,132.999,0,0" VerticalAlignment="Top" Width="506.166" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
         <TextBlock x:Name="textBlock5_Copy" HorizontalAlignment="Left" Margin="47.833,96.755,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="1"><Run Text="Lo"/><Run Text="g"/></TextBlock>
