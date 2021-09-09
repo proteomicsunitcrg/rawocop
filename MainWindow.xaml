@@ -33,7 +33,7 @@
         <PasswordBox x:Name="tbPassword" TabIndex="1" HorizontalAlignment="Left" Margin="370,39.51,0,0" VerticalAlignment="Top" Height="22" Width="115.88"/>
         <Button x:Name="bCopyLogToClipboard" Content="Copy Log to Clipboard" HorizontalAlignment="Left" Margin="202,95,0,0" VerticalAlignment="Top" Width="123" Grid.Row="1" Height="26"/>
         <TextBlock x:Name="textBlock5_Copy1" HorizontalAlignment="Left" Margin="548,256,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="1" Height="40" FontSize="35" FontFamily="Serif"><Run Text=" "/><Run Text="rawocop "/></TextBlock>
-        <TextBlock x:Name="textBlock5_Copy2" HorizontalAlignment="Left" Margin="548,301,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="1" Height="40" FontSize="15" FontFamily="Serif"><Run Text=" "/><Run Text=" for Themro RAW files     "/></TextBlock>
+        <TextBlock x:Name="textBlock5_Copy2" HorizontalAlignment="Left" Margin="548,301,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="1" Height="40" FontSize="15" FontFamily="Serif"><Run Text=" "/><Run Text=" for Thermo RAW files     "/></TextBlock>
         <Button x:Name="buttonTestConn" TabIndex="4" Content="Test connectivity" HorizontalAlignment="Left" Margin="510,74,0,0" VerticalAlignment="Top" Width="122" Height="21" Visibility="Hidden"/>
     </Grid>
 </Window>
