@@ -1,84 +1,54 @@
-﻿Imports System.IO
-Imports System.Net
-Imports System.ComponentModel
-Imports System.Windows.Forms
-Imports System.Drawing
-Imports MySql.Data.MySqlClient
-Imports System.Data
-Imports FASTftp.Utilities.FTP
+﻿Imports System.ComponentModel
+Imports System.IO
+Imports ThermoFisher.CommonCore.Data.Interfaces
+Imports ThermoFisher.CommonCore.RawFileReader
 
 Class MainWindow
 
+    'Hardcodes: 
+    Dim min_interval As String = "300000" 'millisec
+    Dim MinFileSize As Long = 500000 '0.5 MB
+    Dim MaxFileSize As Long = 10000000000 '10 GB
+
+    'Declarations and definitions:
+    Dim debugMode As Boolean = False '--------------DEBUG
     Private Shared myTimer As New Timers.Timer
     Dim bw As BackgroundWorker = New BackgroundWorker
     Dim flagERR01 As Boolean = False
     Dim uplodadResult As Boolean = False
+    Dim uploadResultCode As New ArrayList()
     Dim stopped As Boolean = False
     Dim localPathToUploadFile As String = ""
     Dim monitoredFolder As String = ""
-    Dim FTPaddressString As String = ""
-    Dim FTPuserString As String = ""
-    Dim FTPpasswordString As String = ""
-    Dim FTPfolderString As String = ""
     Dim processedFolderString As String = ""
-    Dim QCodeString As String = ""
-    Dim QCodeExcludesString As String = ""
-    Dim QCextensionString As String = ""
-    Private notifyIcon As NotifyIcon
-    Dim w As StreamWriter = File.AppendText("log-qcrawler.txt")
     Private Shared BlackListOfFiles As New ArrayList()
     Private Shared notInUseListOfFiles As New ArrayList()
-    Dim MinFileSize As Long = 0
-    Dim debugMode As Boolean = False
-    Dim conn As New MySqlConnection
-    Dim dbPHPurl As String = ""
-    Dim dbUser As String = ""
-    Dim dbPassword As String = ""
-    Dim currentInstrument As String = ""
-    Dim qcollectorOutputParam As String = ""
     Dim networkErrorMessageCounter As Integer = 0
+    Dim fileChecksum As String = ""
 
 
     Public Sub New()
 
         InitializeComponent()
 
-        'Splash screen:
-        'Dim s = New SplashScreen1()
-        's.Show()
-        'System.Threading.Thread.Sleep(2000)
-        's.Close()
-
         bw.WorkerSupportsCancellation = True
         AddHandler myTimer.Elapsed, AddressOf filesManager
         AddHandler bw.DoWork, AddressOf bw_DoWork
         AddHandler bw.RunWorkerCompleted, AddressOf bw_RunWorkerCompleted
 
-        If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
+        If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
 
         'Disable controls: 
         tbMonitoredFolder.IsEnabled = False
-        bBrowseAcquisitionFolder.IsEnabled = False
-        cbInstruments.IsEnabled = False
-        bStartSync.IsEnabled = False
+        bBrowseAcquisitionFolder.IsEnabled = True
         bStartSync.IsEnabled = False
         bStopSync.IsEnabled = False
         bClearLog.IsEnabled = False
-        Button.IsEnabled = False
+        bCopyLogToClipboard.IsEnabled = False
+        tbAddress.IsEnabled = False
+        tbUser.IsEnabled = False
 
     End Sub
-
-    Private Function checkInternetConn() As Boolean
-        Try
-            Using client = New WebClient()
-                Using stream = client.OpenRead("http://www.google.com")
-                    Return True
-                End Using
-            End Using
-        Catch
-            Return False
-        End Try
-    End Function
 
     Private Function checkNetworkConn() As Boolean
         If Not My.Computer.Network.IsAvailable Then
@@ -91,162 +61,18 @@ Class MainWindow
         Dim fileSec = System.IO.File.GetAccessControl(monitoredFolder)
         Dim accessRules = fileSec.GetAccessRules(True, True, GetType(System.Security.Principal.NTAccount))
         For Each rule As System.Security.AccessControl.FileSystemAccessRule In accessRules
-            If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Identity Reference: " & rule.IdentityReference.Value)
-            If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Access Control Type: " & rule.AccessControlType.ToString())
-            If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File System Rights: " & rule.FileSystemRights.ToString())
+            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Identity Reference: " & rule.IdentityReference.Value)
+            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Access Control Type: " & rule.AccessControlType.ToString())
+            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File System Rights: " & rule.FileSystemRights.ToString())
             Exit For
         Next
     End Sub
-
-    Function checkRemoteDBavailable() As Boolean
-        Dim output As Boolean = False
-        Try
-            Dim wc As New WebClient
-            wc.Headers("content-type") = "application/x-www-form-urlencoded"
-            Dim response As String = wc.UploadString(dbPHPurl, "check_conn=true")
-            If response IsNot Nothing Then
-                output = True
-            End If
-        Catch ex As Exception
-            Console.Write(ex.Message)
-        End Try
-        Return output
-    End Function
-
-    Function checkRemoteDBUserAndPassword(username As String, password As String) As Boolean
-        Dim output As Boolean = False
-        Try
-            Dim wc As New WebClient
-            wc.Headers("content-type") = "application/x-www-form-urlencoded"
-            Dim response As String = wc.UploadString(dbPHPurl, "username=" & username & "&password=" & password)
-            If response.Trim = "True" Then
-                output = True
-            End If
-        Catch ex As Exception
-            Console.Write(ex.Message)
-        End Try
-        Return output
-    End Function
-
-    Function checkUserAndPassword(username As String, password As String) As Boolean
-        Dim output As Boolean = False
-        Try
-            Dim wc As New WebClient
-            wc.Headers("content-type") = "application/x-www-form-urlencoded"
-            Dim response As String = wc.UploadString(dbPHPurl, "username=" & username & "&password=" & password)
-            If response.Trim = "True" Then
-                output = True
-            End If
-        Catch ex As Exception
-            Console.Write(ex.Message)
-        End Try
-        Return output
-    End Function
-
-    Function getRemoteDBuserInstruments(username As String) As String
-        Dim output As String = ""
-        Try
-            Dim wc As New WebClient
-            wc.Headers("content-type") = "application/x-www-form-urlencoded"
-            Dim response As String = wc.UploadString(dbPHPurl, "userinstrument=" & username)
-            output = response
-        Catch ex As Exception
-            Console.Write(ex.Message)
-        End Try
-        Return output
-    End Function
-
-    Function getRemoteDBqcodes(username As String, password As String, instrument_name As String) As String
-        Dim output As String = ""
-        Try
-            Dim wc As New WebClient
-            wc.Headers("content-type") = "application/x-www-form-urlencoded"
-            Dim response As String = wc.UploadString(dbPHPurl, "username=" & username & "&password=" & password & "&instrument_name=" & instrument_name)
-            output = response
-        Catch ex As Exception
-            Console.Write(ex.Message)
-        End Try
-        Return output
-    End Function
-
-    Function getRemoteDBqcollectorParameters(username As String, password As String, instrument_name As String, isqcollector As Boolean) As String
-        Dim output As String = ""
-        Try
-            Dim wc As New WebClient
-            wc.Headers("content-type") = "application/x-www-form-urlencoded"
-            Dim response As String = wc.UploadString(dbPHPurl, "username=" & username & "&password=" & password & "&instrument_name=" & instrument_name & "&isqcollector=" & isqcollector)
-            output = response
-        Catch ex As Exception
-            Console.Write(ex.Message)
-        End Try
-        Return output
-    End Function
-
-    Private Function getDBversion() As String
-        Dim stm As String = "Select VERSION()"
-        Dim output As String = ""
-        Try
-            Dim cmd As MySqlCommand = New MySqlCommand(stm, conn)
-            conn.Open()
-            output = Convert.ToString(cmd.ExecuteScalar())
-            'Dim da As New MySqlDataAdapter
-            'Dim ds As New DataSet
-            'da.SelectCommand = cmd
-            'da.Fill(ds, "user")
-            'Console.Write(ds.Tables("user").Rows(0).Item("password").ToString())
-        Catch ex As MySqlException
-            Console.WriteLine("Error: " & ex.ToString())
-        Finally
-            conn.Close()
-        End Try
-        Return output
-    End Function
-
-    Private Function getDBpassword(username As String) As String
-        Dim stm As String = "SELECT password FROM user WHERE username ='" & username & "'"
-        Dim output As String = ""
-        Try
-            Dim cmd As MySqlCommand = New MySqlCommand(stm, conn)
-            conn.Open()
-            Dim da As New MySqlDataAdapter
-            Dim ds As New DataSet
-            da.SelectCommand = cmd
-            da.Fill(ds, "user")
-            Console.Write(ds.Tables("user").Rows(0).Item("password").ToString())
-        Catch ex As MySqlException
-            Console.WriteLine("Error: " & ex.ToString())
-        Finally
-            conn.Close()
-        End Try
-        Return output
-    End Function
-
-    Private Function getSystemDate(localFile As String) As String
-        Try
-            localFile = localFile.Substring(localFile.LastIndexOf("_") + 1, 14)
-            If IsDate(localFile.Substring(0, 4) & " " & localFile.Substring(4, 2) & " " & localFile.Substring(6, 2)) Then
-                Return localFile
-            Else
-                Return ""
-            End If
-        Catch ex As Exception
-            Return ""
-        End Try
-        Return ""
-    End Function
 
     Private Function getCurrentLogDate() As String
         Dim currentDate As DateTime = DateTime.Now
         Dim currentMonthFolder As String
         currentMonthFolder = Format$(currentDate, "yyyy-MM-dd HH:mm:ss")
         Return "[" & currentMonthFolder & "] "
-    End Function
-
-    Private Function getCurrentSystemDate() As String
-        Dim currentDate As DateTime = DateTime.Now
-        Dim currentMonthFolder As String
-        currentMonthFolder = Format$(currentDate, "yyyyMMddhhmmss")
-        Return currentMonthFolder
     End Function
 
     Private Function getCurrentMonthFolder() As String
@@ -256,139 +82,141 @@ Class MainWindow
         Return currentMonthFolder
     End Function
 
-    Private Function IsFileInUse(filename As String) As Boolean
-        Dim Locked As Boolean = False
-        Try
-            'Open the file in a try block in exclusive mode.  
-            'If the file is in use, it will throw an IOException. 
-            Dim fs As FileStream = File.Open(filename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)
-            fs.Close()
-            ' If an exception is caught, it means that the file is in Use 
-        Catch ex As IOException
-            Locked = True
-        End Try
-        Return Locked
-    End Function
-
-    Private Function filterLocalFolder(includesListString As String, excludesListString As String, localPath As String) As ArrayList
-
-        'this function is very inefficient but it works for whatever .NET version
-
-        Dim includesList As New ArrayList(includesListString.Split(","))
-        Dim excludesList As New ArrayList(excludesListString.Split(","))
-
-        Dim outputList As New ArrayList()
-        Dim finalPositiveList As New ArrayList()
-        Dim finalNegativeList As New ArrayList()
-
-
-        Dim dir As New System.IO.DirectoryInfo(localPath)
-
-        For Each include In includesList
-            Dim fileListIncludes = dir.GetFiles("*" & include & "*", System.IO.SearchOption.TopDirectoryOnly)
-            For Each fileList In fileListIncludes
-                finalPositiveList.Add(fileList.FullName)
-            Next
-        Next
-
-        For Each exclude In excludesList
-            Dim fileListExcludes = dir.GetFiles("*" & exclude & "*", System.IO.SearchOption.TopDirectoryOnly)
-            For Each fileList In fileListExcludes
-                finalNegativeList.Add(fileList.FullName)
-            Next
-        Next
-
-        For Each finalPositive In finalPositiveList
-            Dim flag As Boolean = False
-            For Each finalNeagtive In finalNegativeList
-                If finalPositive = finalNeagtive Then
-                    flag = True
-                End If
-            Next
-            If Not flag Then
-                outputList.Add(finalPositive)
-            End If
-        Next
-
-        Return outputList
-
-    End Function
-
-    Private Function createFTPfolder(ByVal fileUri As String, user As String, password As String, currentMonthFolder As String, qcodes As String) As Boolean
-        Dim qcodesList As New ArrayList(qcodes.Split(","))
-        Dim myFtpConn As New FTPclient(fileUri, user, password)
-        If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] fileuri: " & fileUri & ", user length: " & user.Length & ", password length: " & password.Length)
-        Try
-            myFtpConn.ListDirectory()
-            For Each code In qcodesList
-                If Not myFtpConn.FtpDirectoryExists("/" & currentMonthFolder & "/" & code & "/.") Then
-                    Try
-                        If myFtpConn.FtpCreateDirectory("/" & currentMonthFolder & "/" & code) Then
-                            Console.Write(getCurrentLogDate() & "Folder " & fileUri & "/" & currentMonthFolder & "/" & code & " created.")
-                            If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "Folder " & fileUri & "/" & currentMonthFolder & "/" & code & " created.")
-                        End If
-                    Catch ex As Exception
-                        If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "Folder " & fileUri & "/" & currentMonthFolder & "/" & code & " cannot be created. Please check.")
-                        Log(getCurrentLogDate() & "Folder " & fileUri & "/" & currentMonthFolder & "/" & code & " cannot be created. Please check.", w)
-                        Return False
-                    End Try
-                End If
-            Next
-            Return True
-        Catch ex As Exception
-            If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] FTP Server cannot be reached. Please contact QCloud administrator [Detail: ftp address: " & fileUri & "].")
-            Log(getCurrentLogDate() & "[ERROR] FTP Server cannot be reached. Please contact QCloud administrator [Detail: ftp address: " & fileUri & "].", w)
-            Return False
-        End Try
-    End Function
-
-    Private Function copyLocalFileToFTP(ByVal fileUri As String, user As String, password As String, localFile As String) As Boolean
+    ' Uploads file to SFTP
+    Private Function copyLocalFileToSFTP(user As String, password As String, localFile As String, Database As String, AgendoID As String, RawClient As String) As ArrayList
 
         Dim localFileInfo As New FileInfo(localFile)
         Dim localFileName As String = Path.GetFileName(localFile)
+        Dim extension As String = Path.GetExtension(localFile)
+        Dim targetFolder = rootSFTPdataFolder + sftp_output_folder
+        Dim targetPath As String = targetFolder + "/" + Path.GetFileNameWithoutExtension(localFile) & extension
+        Dim scratchPath As String = scratchFolder + "/" + Path.GetFileNameWithoutExtension(localFile) & extension
+        Dim isUploadStorageOK As Boolean = True
+        Dim isUploadQSampleOK As Boolean = True
         Dim isEverythingOK As Boolean = True
+        Dim uploadStorageCode As String = "ST-OK"
+        Dim uploadQSampleCode As String = "QS-OK"
+        Dim output As New ArrayList()
 
-        'Connect to FTP Server: 
+        'Connect to SFTP Server: 
         Try
-            Dim myFtp As New FTPclient(fileUri, user, password)
-            'Compare filenames and size and rename/move when applies:  
-            Dim serverFileExist As Boolean = myFtp.FtpFileExists(localFileName)
-            If serverFileExist Then
-                Dim serverFileSize As Long = myFtp.GetFileSize(localFileName)
-                Console.Write(getCurrentLogDate() & "File " & localFileName & " DOES exist in the remote server, so renaming first..." & vbCrLf)
-                If serverFileSize = localFileInfo.Length Then 'Compare size between local and remote files
-                    renameRepeatedFile(localFile) 'File with same name and same size => REPEATED, so rename as "_rep"
-                    stopped = True
-                Else
-                    localPathToUploadFile = renameModifiedFile(localFile) 'File with same name and different size => MODIFIED, so rename as "_yyyyMMddhhmmss"
-                End If
-            Else
-                Console.Write(getCurrentLogDate() & "File " & localFileName & " DOES NOT exist in the remote server, so uploading now..." & vbCrLf)
-                localPathToUploadFile = localFile
-            End If
+
+            localPathToUploadFile = localFile
+
+            Dim client As SftpClient = New SftpClient(SFTPaddressString, user, password)
+            client.Connect()
+
             'Upload file when applies
             If Not stopped Then
                 Try
+
+                    'Create storage folders when applies: 
+                    If Not client.Exists(targetFolder) Then
+                        CreateAllDirectories(client, sftp_output_folder)
+                    End If
+
+                    'Copy to storage: 
                     Dispatcher.Invoke(Sub()
-                                          If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "Uploading file " & Path.GetFileName(localPathToUploadFile) & "...")
-                                          Log(getCurrentLogDate() & "Uploading file " & Path.GetFileName(localPathToUploadFile) & "...", w)
+                                          lbLog.Items.Insert(0, getCurrentLogDate() & "Uploading to Storage...Details: file " & Path.GetFileName(localPathToUploadFile) & " to folder " & targetFolder & "...")
                                       End Sub)
-                    Console.Write(getCurrentLogDate() & "Uploading file..." & vbCrLf)
-                    myFtp.Upload(localPathToUploadFile, Path.GetFileName(localPathToUploadFile)) '<------------------------------UPLOADS FILE TO SERVER'<------------------------------>
+
+                    Using stream As Stream = File.OpenRead(localPathToUploadFile)
+                        'Upload to /data: 
+                        If client.Exists(targetFolder) Then
+                            If Not client.Exists(targetPath) Then
+                                client.UploadFile(stream, targetPath & ".filepart") '<------------------------------UPLOADS FILE TO /DATA<------------------------------>
+                                client.RenameFile(targetPath & ".filepart", targetPath)
+                            Else
+                                uploadStorageCode = "UC-ST-EX"
+                            End If
+                        Else
+
+                        End If
+                    End Using
+
+                    'Copy to QSample: 
+                    Dispatcher.Invoke(Sub()
+                                          lbLog.Items.Insert(0, getCurrentLogDate() & "Uploading to QSample...Details: file " & Path.GetFileName(localPathToUploadFile) & " to folder " & scratchFolder & "...")
+                                      End Sub)
+
+                    Using stream As Stream = File.OpenRead(localPathToUploadFile)
+                        'Upload to Qsample: 
+                        If client.Exists(scratchFolder) Then 'Upload to QSample:
+                            If Not client.Exists(scratchPath) Then
+                                If Database <> "" And AgendoID <> "" And RawClient <> "" Then
+                                    client.UploadFile(stream, scratchPath & ".filepart") '<------------------------------UPLOADS FILE TO QSAMPLE<------------------------------>
+                                    client.RenameFile(scratchPath & ".filepart", scratchPath & "." & Database)
+                                Else
+                                    uploadQSampleCode = "UC-QS-9606"
+                                End If
+                            Else
+                                uploadQSampleCode = "UC-QS-EX"
+                            End If
+                        End If
+                    End Using
+
+
+                    'wetlab
+                    Using stream As Stream = File.OpenRead(localPathToUploadFile)
+                        'Upload to Qsample: 
+                        If client.Exists(scratchFolder) Then 'Upload to QSample:
+                            If Not client.Exists(scratchPath) Then
+                                If Database <> "" And (RawClient = "QCGV" Or RawClient = "QCDV" Or RawClient = "QCFV" Or RawClient = "QCPV " Or RawClient = "QCRP") Then
+                                    client.UploadFile(stream, scratchPath & ".filepart") '<------------------------------UPLOADS FILE TO QSAMPLE<------------------------------>
+                                    client.RenameFile(scratchPath & ".filepart", scratchPath & "." & Database)
+                                    uploadQSampleCode = "QS-OK"
+                                Else
+                                    uploadQSampleCode = "UC-QS-9606"
+                                End If
+                            Else
+                                uploadQSampleCode = "UC-QS-EX"
+                            End If
+                        End If
+                    End Using
+
                 Catch ex As Exception
-                    Console.Write(getCurrentLogDate() & "[ERROR] Upload failed! Error description: " & ex.Message & vbCrLf)
-                    isEverythingOK = False
+                    If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] SFTP Upload exception: " & ex.Message)
+                    uploadStorageCode = "UC-SFTP-GEN"
+                    uploadQSampleCode = "UC-SFTP-GEN"
                 End Try
+
             End If
+
         Catch ex As Exception
-            Console.Write(getCurrentLogDate() & "[ERROR] FTP server not available. Error description: " & ex.Message & vbCrLf)
-            isEverythingOK = False
+            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] SFTP server connection exception: " & ex.Message)
+            uploadStorageCode = "UC-SFTP-CONN"
+            uploadQSampleCode = "UC-SFTP-CONN"
         End Try
 
-        'If everything went OK: 
-        Return isEverythingOK
+        output.Add(uploadStorageCode)
+        output.Add(uploadQSampleCode)
+
+        Return output
 
     End Function
+
+    Public Sub CreateAllDirectories(ByVal client As SftpClient, ByVal path As String)
+
+        ' Consistent forward slashes
+        path = path.Replace("\", "/")
+        client.ChangeDirectory(rootSFTPdataFolder)
+
+        For Each dir As String In path.Split("/"c)
+
+            ' Ignoring leading/ending/multiple slashes
+            If Not String.IsNullOrWhiteSpace(dir) Then
+
+                If Not client.Exists(dir) Then
+                    client.CreateDirectory(dir)
+                End If
+
+                client.ChangeDirectory(dir)
+            End If
+        Next
+
+        ' Going back to default directory
+        client.ChangeDirectory("/")
+    End Sub
 
     Private Function moveFileToProcessedFolder(fileToMove As String, processedTargetFilename As String, processedFolder As String) As Boolean
         Try
@@ -412,8 +240,7 @@ Class MainWindow
 
         If errorCode Is "ERR01" And Not flagERR01 Then
             outputMessage = message
-            Log(outputMessage, w)
-            If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, outputMessage)
+            lbLog.Items.Insert(0, outputMessage)
             flagERR01 = True
         End If
 
@@ -422,22 +249,6 @@ Class MainWindow
     Private Sub initializeFlags()
         flagERR01 = False
     End Sub
-
-    Private Function getQCodeFromFilename(filename As String) As String
-
-        filename = Path.GetFileName(filename)
-
-        Dim output As String = ""
-
-        If filename.IndexOf("QC") <> -1 Then
-            output = filename.Substring(filename.IndexOf("QC") + 0, 4)
-        ElseIf filename.Substring(0, 3) = "Cal" Then
-            output = "cal"
-        End If
-
-        Return output
-
-    End Function
 
     Private Function getFilesNotInBlackList(fileslist As ArrayList) As ArrayList
         Dim output As New ArrayList()
@@ -449,81 +260,133 @@ Class MainWindow
         Return output
     End Function
 
-    Private Function getFilesNotInUse(fileslist As ArrayList) As ArrayList
+    Private Function getCleanFileList(fileslist As ArrayList) As ArrayList
         notInUseListOfFiles.Clear()
         For Each file In fileslist
-            Dim filereader As System.IO.FileInfo = My.Computer.FileSystem.GetFileInfo(file)
+            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Checking file state: " & file)
             If IsFileInUse(file) Then
                 notInUseListOfFiles.Remove(file)
-                showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] The file " & file & " is being used by another program. Skipping it until released.", "ERR01")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File in use: " & file)
             Else
-                If filereader.Length > MinFileSize Then ' Check that the file has a minimum size
-                    notInUseListOfFiles.Add(file)
-                ElseIf filereader.Length <= MinFileSize Then
+                Dim filereader As System.IO.FileInfo = My.Computer.FileSystem.GetFileInfo(file)
+                Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(file) 'Load RAW file with Thermo lib
+                Try
+                    rawFile.SelectInstrument(instrumentType:=0, 1)
+                    If filereader.Length > MinFileSize Then ' Check that the file has a minimum size
+                        Dim sampleType As String = rawFile.SampleInformation.SampleType.ToString
+                        Dim client As String = rawFile.SampleInformation.UserText.GetValue(1)
+                        Dim database As String = rawFile.SampleInformation.UserText.GetValue(4)
+                        If sampleType = "QC" And (client = "QC01" Or client = "QC02" Or client = "QC03") Then ' Does not includes QCrawler files
+                            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] QCrawler file so it is not included to the upload." & file)
+                        ElseIf database.ToLower = "undefined" Or database.ToLower = "na" Or database.ToLower = "n/a" Then
+                            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Undefined or N/A so it is not included to the upload." & file)
+                        Else
+                            notInUseListOfFiles.Add(file)
+                        End If
+                    ElseIf filereader.Length <= MinFileSize Then
+                        notInUseListOfFiles.Remove(file)
+                    End If
+                Catch ex As Exception
+                    If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Instrument index not available for requested device" & vbCrLf & "Parameter name: instrumentIndex" & ex.Message)
                     notInUseListOfFiles.Remove(file)
-                End If
+                End Try
+
+                rawFile.Dispose()
             End If
         Next
+        If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Number of clean files: " & notInUseListOfFiles.Count)
         Return notInUseListOfFiles
-    End Function
-
-    Private Function validateQCodes(codes As String) As Boolean
-        Dim qcodesList As New ArrayList(codes.Split(","))
-        Dim output As Boolean = False
-        For Each code In qcodesList
-            If code.ToString.Length = 4 Then
-                If code.ToString.IndexOf("QC") <> -1 Then
-                    output = True
-                End If
-            Else
-                If code.ToString = "cal" Then 'for TTOF
-                    output = True
-                End If
-            End If
-        Next
-        Return output
-    End Function
-
-    Private Function isCalFolder(codes As String) As Boolean
-        Dim qcodesList As New ArrayList(codes.Split(","))
-        Dim output As Boolean = False
-        For Each code In qcodesList
-            If code = "cal" Or code = "Cal" Then
-                output = True
-            End If
-        Next
-        Return output
     End Function
 
     Private Sub bw_DoWork(ByVal sender As Object, ByVal e As DoWorkEventArgs)
         Dim worker As BackgroundWorker = CType(sender, BackgroundWorker)
         Dim workerInputs As String() = e.Argument
-        uplodadResult = copyLocalFileToFTP(workerInputs(0), workerInputs(1), workerInputs(2), workerInputs(3))
+        uploadResultCode = copyLocalFileToSFTP(workerInputs(0), workerInputs(1), workerInputs(2), workerInputs(3), workerInputs(4), workerInputs(5))
         e.Result = localPathToUploadFile
     End Sub
 
     Private Sub bw_RunWorkerCompleted(ByVal sender As Object, ByVal e As RunWorkerCompletedEventArgs)
+
         If Not stopped Then
-            If uplodadResult Then
-                lbLog.Items.Insert(0, getCurrentLogDate() & "File Uploaded!")
+
+            Dim uploadResultCodeStorage = uploadResultCode.Item(0)
+            Dim uploadResultCodeQSample = uploadResultCode.Item(1)
+            Dim isMovedProcessed As Boolean = False
+
+            '--------------OK:
+
+            ' If Upload to storage OK:
+            If uploadResultCodeStorage Is "ST-OK" Then
+                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & Path.GetFileName(e.Result) & " uploaded to Storage!")
                 initializeFlags()
-                Log(getCurrentLogDate() & "File Uploaded!", w)
-                Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedFolderString & "\" & getCurrentMonthFolder()
-                'Move files to processed folder
-                If moveFileToProcessedFolder(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
-                    If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "File " & e.Result & " moved to processed folder")
-                    Log(getCurrentLogDate() & "File " & e.Result & " moved to processed folder", w)
-                Else
-                    If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.")
-                    Log(getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.", w)
+                If Not isMovedProcessed Then
+                    Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedFolderString & "\" & getCurrentMonthFolder()
+                    'Move files to processed folder
+                    If moveFileToProcessedFolder(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
+                        lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & e.Result & " moved to processed folder")
+                        isMovedProcessed = True
+                    Else
+                        lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.")
+                    End If
                 End If
-            Else
-                BlackListOfFiles.Add(Path.GetFileName(e.Result))
-                If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Upload failed! Please check this file:  " & Path.GetFileName(e.Result))
-                If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload failed. Please check this file:  " & Path.GetFileName(e.Result))
             End If
+
+            If uploadResultCodeQSample Is "QS-OK" Then
+                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & Path.GetFileName(e.Result) & " uploaded to QSample!")
+                initializeFlags()
+                If Not isMovedProcessed Then
+                    Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedFolderString & "\" & getCurrentMonthFolder()
+                    'Move files to processed folder
+                    If moveFileToProcessedFolder(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
+                        lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & e.Result & " moved to processed folder")
+                        isMovedProcessed = True
+                    Else
+                        lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.")
+                    End If
+                End If
+            End If
+
+            '--------------ERR:
+
+            ' If Upload to storage interrupted. Reason: file already exists
+            If uploadResultCodeStorage Is "UC-ST-EX" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] Upload to Storage failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload to storage failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
+            End If
+
+            ' If Upload to QSample interrupted. Reason: file already exists
+            If uploadResultCodeQSample Is "UC-QS-EX" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] File not uploaded to QSample. Reason: file " & Path.GetFileName(e.Result) & " already exists.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload to QSample failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
+            End If
+
+            ' If Upload to QSample interrupted. Reason: file is not 9606
+            If uploadResultCodeQSample Is "UC-QS-9606" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] File not uploaded to QSample. Reason: file " & Path.GetFileName(e.Result) & " has not Database field informed.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File not uploaded to QSample. Reason: file " & Path.GetFileName(e.Result) & " has not Database field informed.")
+            End If
+
+            ' If everything went wrong. Reason: general error. 
+            If uploadResultCodeStorage Is "UC-SFTP-GEN" Or uploadResultCodeQSample Is "UC-SFTP-GEN" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] General upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a general error.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a general error.")
+            End If
+
+            ' If everything went wrong. Reason: connection error. 
+            If uploadResultCodeStorage Is "UC-SFTP-CONN" Or uploadResultCodeQSample Is "UC-SFTP-CONN" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] General upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a connectivity error.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a connectivity error.")
+            End If
+
         End If
+
         myTimer.Start()
+
     End Sub
 
     Private Sub bStopSync_Click(sender As Object, e As RoutedEventArgs) Handles bStopSync.Click
@@ -534,65 +397,8 @@ Class MainWindow
         bStopSync.IsEnabled = False
         myTimer.Stop()
         stopped = True
-        If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "STOP monitoring RAW files at " & monitoredFolder)
-        Log(getCurrentLogDate() & "STOP monitoring RAW files at " & monitoredFolder, w)
+        lbLog.Items.Insert(0, getCurrentLogDate() & "STOP monitoring RAW files at " & monitoredFolder)
     End Sub
-
-    Private Function renameRepeatedFile(localFile As String) As Boolean
-        Dim localFileRenameRep As String = Path.GetFileNameWithoutExtension(localFile) & "_rep" & Path.GetExtension(localFile)
-        Try
-            If Not IsFileInUse(localFile) Then
-                My.Computer.FileSystem.RenameFile(localFile, localFileRenameRep)
-            End If
-        Catch ex As Exception
-            Dispatcher.Invoke(Sub()
-                                  If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Renaming failed for the file " & localFile & "Error message:  " & ex.Message)
-                                  Log(getCurrentLogDate() & "[ERROR] Renaming failed for the file " & localFile & "Error message: " & ex.Message, w)
-                              End Sub)
-            Return False
-        End Try
-        'Move "_rep" file to processed folder
-        Dim processedTargetFolder As String = Path.GetDirectoryName(localFile) & "\" & processedFolderString & "\" & getCurrentMonthFolder()
-        If moveFileToProcessedFolder(Path.GetDirectoryName(localFile) & "\" & localFileRenameRep, processedTargetFolder & "\" & localFileRenameRep, processedTargetFolder) Then
-            Dispatcher.Invoke(Sub()
-                                  If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "File " & localFile & " already exist at the FTP Server and with the same file size so it will be only moved to the processed folder and renamed by " & localFileRenameRep)
-                                  Log(getCurrentLogDate() & "The file " & localFile & " already exist at the FTP Server and with the same file size so it will be only moved to the processed folder and renamed by " & localFileRenameRep, w)
-                              End Sub)
-        Else
-            Dispatcher.Invoke(Sub()
-                                  If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & localFile & " cannot be moved to processed folder. Please check.")
-                                  Log(getCurrentLogDate() & "[ERROR] The File " & localFile & " cannot be moved to processed folder. Please check.", w)
-                              End Sub)
-            Return False
-        End If
-        Return True
-    End Function
-
-    Private Function renameModifiedFile(localFile As String) As String
-        Dispatcher.Invoke(Sub()
-                              If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "Detected a file in the FTP with the same name but different size, so it's going to be renamed adding a _yyyyMMddhhmmss.")
-                              Log(getCurrentLogDate() & "Detected a file in the FTP with the same name but different size, so it's going to be renamed adding a _yyyyMMddhhmmss.", w)
-                          End Sub)
-        Dim localFileRenameSystemDate As String
-        If getSystemDate(localFile) Is "" Then ' INSERT name if it DOES NOT already has an "_yyyyMMddhhmmss"
-            Console.Write(getCurrentLogDate() & "Adding _yyyyMMddhhmmss" & vbCrLf)
-            localFileRenameSystemDate = Path.GetFileNameWithoutExtension(localFile) & "_" & getCurrentSystemDate() & Path.GetExtension(localFile)
-        Else ' UPDATE if it DOES already has an "_yyyyMMddhhmmss"
-            Console.Write(getCurrentLogDate() & "It already has _yyyyMMddhhmmss so updating it" & vbCrLf)
-            localFileRenameSystemDate = Path.GetFileName(localFile.Substring(0, localFile.LastIndexOf("_")) & "_" & getCurrentSystemDate() & Path.GetExtension(localFile))
-        End If
-        Try
-            If Not IsFileInUse(localFile) Then
-                My.Computer.FileSystem.RenameFile(localFile, localFileRenameSystemDate)
-            End If
-            Console.Write(getCurrentLogDate() & "Local file " & localFile & " renamed to " & localFileRenameSystemDate & vbCrLf)
-        Catch ex As Exception
-            Console.Write(getCurrentLogDate() & "Exception while renaming the file " & localFile & " to " & localFileRenameSystemDate & ": " & ex.Message & vbCrLf)
-        End Try
-        ' (note: not moved yet because first it has to be uploaded!) 
-        Console.Write(getCurrentLogDate() & "The file " & localFile & " already exist and has the different size so it will be uploaded and renamed by " & localFileRenameSystemDate & vbCrLf)
-        Return Path.GetDirectoryName(localFile) & "\" & localFileRenameSystemDate
-    End Function
 
     Private Sub bClearLog_Click(sender As Object, e As RoutedEventArgs) Handles bClearLog.Click
         lbLog.Items.Clear()
@@ -601,66 +407,16 @@ Class MainWindow
     Private Sub bBrowseAcquisitionFolder_Click(sender As Object, e As RoutedEventArgs) Handles bBrowseAcquisitionFolder.Click
         Dim dialog As New FolderBrowserDialog()
         dialog.RootFolder = Environment.SpecialFolder.Desktop
-        dialog.SelectedPath = "C:\"
-        dialog.Description = "Select Application Configeration Files Path"
+        dialog.SelectedPath = "C: \"
+        dialog.Description = "Select Application Configuration Files Path"
         If dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
-            tbMonitoredFolder.Text = dialog.SelectedPath
             tbMonitoredFolder.IsEnabled = False
             bBrowseAcquisitionFolder.IsEnabled = False
             bStartSync.IsEnabled = True
-            bStopSync.IsEnabled = True
-            bClearLog.IsEnabled = True
-            Button.IsEnabled = True
-            QCodeString = getRemoteDBqcodes(tbUser.Text, tbPassword.Password, cbInstruments.Text).Trim({","c})
-            lqcodes.Content = QCodeString
-            qcollectorOutputParam = getRemoteDBqcollectorParameters(tbUser.Text, tbPassword.Password, cbInstruments.Text, True)
-            Dim params As String() = qcollectorOutputParam.Split(";")
-            myTimer.Interval = params(0)
-            FTPaddressString = params(1)
-            FTPuserString = params(2)
-            FTPpasswordString = params(3)
-            QCodeExcludesString = params(4)
-            QCextensionString = params(5)
-            debugMode = params(6)
-            MinFileSize = params(7)
+            bStopSync.IsEnabled = False
+            tbMonitoredFolder.Text = dialog.SelectedPath.ToString
+            myTimer.Interval = min_interval
         End If
-    End Sub
-
-    Private Sub button_Click(sender As Object, e As RoutedEventArgs) Handles button.Click
-        Me.WindowState = FormWindowState.Minimized
-        If Me.WindowState = FormWindowState.Minimized Then
-            notifyIcon.Visible = True
-            notifyIcon.Icon = SystemIcons.Application
-            notifyIcon.BalloonTipIcon = ToolTipIcon.Info
-            notifyIcon.BalloonTipTitle = "QCollector minimized!"
-            notifyIcon.BalloonTipText = "Click to maximize again"
-            notifyIcon.ShowBalloonTip(50000)
-            'Me.Hide()
-            ShowInTaskbar = False
-        End If
-    End Sub
-
-    Private Sub notifyIcon_Click()
-        'Me.Show()
-        ShowInTaskbar = True
-        Me.WindowState = FormWindowState.Normal
-        notifyIcon.Visible = False
-    End Sub
-
-    Private Sub Log(logMessage As String, w As TextWriter)
-
-        w.WriteLine(logMessage)
-        w.Flush()
-
-    End Sub
-
-    Private Sub fillInstrumentsComboBox()
-        Dim instruments As String() = getRemoteDBuserInstruments(dbUser).Split(",")
-        For Each instrument In instruments
-            If instrument IsNot "" Then
-                cbInstruments.Items.Add(instrument)
-            End If
-        Next
     End Sub
 
     Private Sub cleanListBox()
@@ -670,152 +426,126 @@ Class MainWindow
         End If
     End Sub
 
-    Private Sub buttonDBconn_Click(sender As Object, e As RoutedEventArgs) Handles buttonDBconn.Click
-
-        If tbUser.Text IsNot "" Then
-            If tbPassword.Password.Length > 0 Then
-
-                dbPHPurl = "http://statsms.crg.es/dbconn.php"
-                'dbPHPurl = "http://statsms.crg.es/dbconn-test.php"
-                dbUser = tbUser.Text
-                dbPassword = tbPassword.Password
-
-                If (checkRemoteDBavailable()) Then
-                    If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] DB connection OK.")
-                    If checkRemoteDBUserAndPassword(dbUser, dbPassword) Then
-                        If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] User and password OK.")
-                        cbInstruments.IsEnabled = True
-                        buttonDBconn.IsEnabled = False
-                        tbUser.IsEnabled = False
-                        tbPassword.IsEnabled = False
-                        fillInstrumentsComboBox()
-                        If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Instruments combobox filled.")
-                    Else
-                        If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Wrong DB user and/or password. Please check.")
-                        Log(getCurrentLogDate() & "[ERROR] Wrong DB user and/or password. Please check.", w)
-                    End If
-                Else
-                    If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] DB connection failed.")
-                    Log(getCurrentLogDate() & "[ERROR] DB connection failed.", w)
-                End If
-            Else
-                If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Please, fill in the password.")
-                Log(getCurrentLogDate() & "[ERROR] Please, fill in the password.", w)
-            End If
-        Else
-            If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Please, fill in the user.")
-            Log(getCurrentLogDate() & "[ERROR] Please, fill in the user.", w)
-        End If
-
-    End Sub
-
-    Private Sub cbInstruments_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles cbInstruments.SelectionChanged
-        currentInstrument = cbInstruments.Text
-        cbInstruments.IsEnabled = False
-        bBrowseAcquisitionFolder.IsEnabled = True
-    End Sub
-
     Private Sub bStartSync_Click(sender As Object, e As RoutedEventArgs) Handles bStartSync.Click
 
         ' Initialize variables: 
         processedFolderString = "processed"
         monitoredFolder = tbMonitoredFolder.Text
+        'monitoredFolder = "C:\rolivella\XCalibur"
         BlackListOfFiles.Add("")
         bStartSync.IsEnabled = False
         bStopSync.IsEnabled = True
+        bCopyLogToClipboard.IsEnabled = True
+        bClearLog.IsEnabled = True
 
         ' Sets the timer interval (millisec).
         myTimer.Start()
 
-        If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "START monitoring RAW files at " & monitoredFolder)
-        Log(getCurrentLogDate() & "START monitoring RAW files at " & monitoredFolder, w)
+        lbLog.Items.Insert(0, getCurrentLogDate() & "START monitoring RAW files at " & monitoredFolder)
 
         If debugMode Then checkFolderPermissions(monitoredFolder)
 
     End Sub
 
+    ' FILE MANAGER -----------------------> 
     Private Sub filesManager(myObject As Object, myEventArgs As EventArgs)
         Dispatcher.Invoke(Sub()
-                              If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Checking monitored local folder...")
-                              If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] filesManager started.")
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Checking monitored local folder...")
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] filesManager started.")
                               myTimer.Stop()
-                              If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] myTimer stopped.")
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] myTimer stopped.")
                               If checkNetworkConn() Then
                                   networkErrorMessageCounter = 0
-                                  If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Network connection OK.")
-                                  Dim FTPaddress As String = "ftp://" & FTPaddressString
+                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Network connection OK.")
                                   If IO.Directory.Exists(monitoredFolder) Then 'Check if local folder exists.
-                                      If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Monitored folder OK.")
-                                      'Check if the "processed" folder exist. If not, create it. 
+                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Monitored folder OK.")
+                                      'Check if the "processed" folder exists. If not, create it. 
                                       Dim processedFolderTarget As String = monitoredFolder & "\" & processedFolderString
                                       If IO.Directory.Exists(processedFolderTarget) Then
-                                          If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] validateQCodes...")
-                                          Dim qcodesList As New ArrayList(QCodeString.Split(","))
-                                          For Each qcode In qcodesList
-                                              If validateQCodes(qcode) Then
-                                                  Dim foundFiles As New ArrayList()
-                                                  If (isCalFolder(qcode)) Then 'Append cal files for TTOF
-                                                      If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] collecting Cal...")
-                                                      If IO.Directory.Exists(monitoredFolder & "\Cal Data") Then
-                                                          Dim foundCalFiles As ArrayList = filterLocalFolder(qcode, QCodeExcludesString, monitoredFolder & "\Cal Data")
-                                                          For Each calfile In foundCalFiles
-                                                              foundFiles.Add(calfile)
-                                                          Next
-                                                      Else
-                                                          If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Cal folder " & monitoredFolder & "\Cal Data" & " not found. Please check.")
-                                                          Log(getCurrentLogDate() & "[ERROR] Cal folder " & monitoredFolder & "\Cal Data" & " not found. Please check.", w)
-                                                          myTimer.Start()
-                                                      End If
-                                                  Else
-                                                      foundFiles = filterLocalFolder(qcode, QCodeExcludesString, monitoredFolder) 'Get a list of local files filtered by QC code, extension and not locked.
-                                                  End If
-                                                  If foundFiles.Count Then
-                                                      If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Found files to process.")
-                                                      If createFTPfolder(FTPaddress, FTPuserString, FTPpasswordString, getCurrentMonthFolder(), qcode) Then 'Check if the current year-month folder exist. If not, create it:
-                                                          Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
-                                                          Dim cleanFilesList As ArrayList = getFilesNotInUse(notInBlackListFiles)
-                                                          If cleanFilesList.Count Then
-                                                              stopped = False
-                                                              If Not bw.IsBusy = True Then
-                                                                  If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Running worker to upload the file to FTP.")
-                                                                  bw.RunWorkerAsync(New String() {FTPaddress & "/" & getCurrentMonthFolder() & "/" & getQCodeFromFilename(cleanFilesList.Item(0)) & "/", FTPuserString, FTPpasswordString, cleanFilesList.Item(0)})
-                                                              End If
+                                          Dim foundFiles As New ArrayList(Directory.GetFiles(monitoredFolder, "*.raw"))
+                                          If foundFiles.Count Then
+                                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Found files to process.")
+                                              Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
+                                              Dim cleanFilesList As ArrayList = getCleanFileList(notInBlackListFiles)
+                                              If cleanFilesList.Count Then
+                                                  stopped = False
+                                                  If Not bw.IsBusy = True Then
+                                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Running worker to upload the file to SFTP...")
+                                                      Dim filenameToUpload As String = cleanFilesList.Item(0)
+                                                      Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) 'Load RAW file with Thermo lib
+                                                      Dim rawFileClient As String = rawFile.SampleInformation.UserText.GetValue(1)
+                                                      Dim rawFileAgendoID As String = rawFile.SampleInformation.UserText.GetValue(3)
+                                                      Dim rawFileDatabase As String = rawFile.SampleInformation.UserText.GetValue(4)
+                                                      If Not rawFile.IsError Then
+                                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File IS NOT in ERROR state: " & filenameToUpload)
+                                                          'Check if remote output folder exists. If not, create it. 
+                                                          rawFile.SelectInstrument(instrumentType:=0, 1)
+                                                          'Dim instrumentFolder As String = rawFile.GetInstrumentData().SerialNumber
+                                                          'sftp_output_folder = "/" + rawFile.GetInstrumentData().Model.ToString.Replace(" ", "_").ToLower + "_" + instrumentFolder + "/raw/" + getCurrentMonthFolder() + "/" + rawFile.SampleInformation.UserText.GetValue(1) 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
+                                                          Dim instrumentFolder As String = cbInstruments.SelectedItem.ToString
+                                                          sftp_output_folder = "/" + instrumentFolder + "/Raw/" + getCurrentMonthFolder() + "/" + rawFileClient 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
+                                                          rawFile.Dispose() '------>Close rawFile by Thermo lib
+                                                          If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than 2GB
+                                                              'UPLOAD file to FTP:
+                                                              bw.RunWorkerAsync(New String() {SFTPuserString, SFTPpasswordString, filenameToUpload, rawFileDatabase, rawFileAgendoID, rawFileClient})
                                                           Else
+                                                              lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] The file " & filenameToUpload & " is greater than 2GB so it won't be uploaded.")
                                                               myTimer.Start()
                                                           End If
                                                       Else
-                                                          myTimer.Start() 'Folder not created
+                                                          myTimer.Start()
                                                       End If
-                                                  Else
-                                                      If lbLog.Items.Count >= 15 Then cleanListBox() Else If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] No files to process.")
-                                                      myTimer.Start() 'No files to process.
                                                   End If
                                               Else
-                                                  If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] QC codes " & qcode & " wrong. Please check (e.g. QC1X, QC2X).")
-                                                  Log(getCurrentLogDate() & "[ERROR] QC codes " & qcode & " wrong. Please check (e.g. QC1X, QC2X).", w)
                                                   myTimer.Start()
                                               End If
-                                          Next
+                                          Else
+                                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] No files to process.")
+                                              myTimer.Start() 'No files to process.
+                                          End If
                                       Else
                                           System.IO.Directory.CreateDirectory(processedFolderTarget)
-                                          If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & processedFolderTarget & " folder created")
-                                          Log(getCurrentLogDate() & processedFolderTarget & " folder created", w)
+                                          lbLog.Items.Insert(0, getCurrentLogDate() & processedFolderTarget & " folder created")
                                           myTimer.Start()
                                       End If
                                   Else
-                                      If lbLog.Items.Count >= 15 Then cleanListBox() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.")
-                                      Log(getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.", w)
+                                      lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.")
                                       myTimer.Start()
                                   End If
                               Else
                                   If networkErrorMessageCounter < 3 Then
-                                      If lbLog.Items.Count >= 15 Then cleanListBox() Else If lbLog.Items.Count = 15 Then lbLog.Items.Clear() Else lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Network connection not available. Please check.")
-                                      Log(getCurrentLogDate() & "[ERROR] Network connection not available. Please check.", w)
+                                      lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Network connection not available. Please check.")
                                       networkErrorMessageCounter = networkErrorMessageCounter + 1
                                   End If
                                   myTimer.Start()
                               End If
                           End Sub)
     End Sub
+
+    Private Sub bCopyLogToClipboard_Click(sender As Object, e As RoutedEventArgs) Handles bCopyLogToClipboard.Click
+
+        Dim clipboardText As String = ""
+
+        For Each item In lbLog.Items
+            clipboardText = clipboardText & item.ToString & Environment.NewLine
+        Next
+
+        Clipboard.SetText(clipboardText)
+
+    End Sub
+
+    Private Function IsFileInUse(filename As String) As Boolean
+        Dim Locked As Boolean = False
+        Try
+            'Open the file in a try block in exclusive mode.  
+            'If the file is in use, it will throw an IOException. 
+            Dim fs As FileStream = File.Open(filename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)
+            fs.Close()
+            ' If an exception is caught, it means that the file is in Use 
+        Catch ex As IOException
+            Locked = True
+        End Try
+        Return Locked
+    End Function
 
 End Class
