@@ -60,5 +60,6 @@
         <TextBlock x:Name="textBlock_Copy2" HorizontalAlignment="Left" Margin="80,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>
         <TextBlock x:Name="textBlock_Copy3" HorizontalAlignment="Left" Margin="230,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>
         <TextBlock x:Name="textBlock_Copy4" HorizontalAlignment="Left" Margin="382,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>
+        <CheckBox x:Name="cbDiscardQCloudFiles" Content="Discard QCloud files" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="70,3,0,0" Grid.Row="4" Grid.Column="3"/>
     </Grid>
 </Window>
