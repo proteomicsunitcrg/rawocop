@@ -34,16 +34,17 @@ Class MainWindow
         InitializeComponent()
 
         bw.WorkerSupportsCancellation = True
-        'AddHandler myTimer.Elapsed, AddressOf filesManager
-        'AddHandler bw.DoWork, AddressOf bw_DoWork
+        AddHandler myTimer.Elapsed, AddressOf filesManager
+        AddHandler bw.DoWork, AddressOf bw_DoWork
         'AddHandler bw.RunWorkerCompleted, AddressOf bw_RunWorkerCompleted
 
-        'If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
+        If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
 
         '1. Starting configuration: 
         '1.1 Folders configuration: 
-        If debugMode Then tbxInputFolder.Text = "C:\Xcalibur\data"
-        If debugMode Then tbxOutputRootFolder.Text = "C:\rolivella\mydata\instruments-sim"
+        If debugMode Then tbxInputFolder.Text = "C:\rolivella\XCalibur\data"
+        If debugMode Then tbxOutputRootFolder.Text = "C:\rolivella\XCalibur\backup"
+        If debugMode Then tbxOutputFolderSummary.Text = "C:\rolivella\XCalibur\backup"
         cbSubFolder1.Items.Add("Instrument Name")
         cbSubFolder1.Items.Add("Serial Number")
         cbSubFolder1.Items.Add("YYMM")
@@ -97,6 +98,7 @@ Class MainWindow
         dialog.Description = "Select Application Configeration Files Path"
         If dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
             tbxInputFolder.Text = dialog.SelectedPath
+            tbxInputFolderSummary.Text = dialog.SelectedPath
         End If
     End Sub
 
@@ -107,6 +109,7 @@ Class MainWindow
         dialog.Description = "Select Application Configeration Files Path"
         If dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
             tbxOutputRootFolder.Text = dialog.SelectedPath
+            tbxOutputFolderSummary.Text = dialog.SelectedPath
         End If
     End Sub
 
@@ -140,6 +143,12 @@ Class MainWindow
             cbSubFolder2.IsEnabled = False
             cbSubFolder3.IsEnabled = False
             cbSubFolder4.IsEnabled = False
+            cbSubFolder1.Text = ""
+            cbSubFolder2.Text = ""
+            cbSubFolder3.Text = ""
+            cbSubFolder4.Text = ""
+            tbxOutputFolderSummary.Text = tbxOutputRootFolder.Text
+
         End If
 
     End Sub
@@ -392,101 +401,102 @@ Class MainWindow
     '    End If
     'End Sub
 
-    'Private Sub bStartSync_Click(sender As Object, e As RoutedEventArgs) Handles bStartSync.Click
+    Private Sub bStartSync_Click(sender As Object, e As RoutedEventArgs) Handles bStartSync.Click
 
-    '    ' Initialize variables: 
-    '    processedFolderString = "processed"
-    '    monitoredFolder = tbMonitoredFolder.Text
-    '    'monitoredFolder = "C:\rolivella\XCalibur"
-    '    BlackListOfFiles.Add("")
-    '    bStartSync.IsEnabled = False
-    '    bStopSync.IsEnabled = True
-    '    bCopyLogToClipboard.IsEnabled = True
-    '    bClearLog.IsEnabled = True
+        monitoredfolder = tbxInputFolder.Text
 
-    '    ' Sets the timer interval (millisec).
-    '    myTimer.Start()
+        ' Initialize variables: 
+        processedfolderstring = "processed"
+        BlackListOfFiles.Add("")
+        bStartSync.IsEnabled = False
+        bStopSync.IsEnabled = True
+        bCopyLogToClipboard.IsEnabled = True
+        bClearLog.IsEnabled = True
 
-    '    lbLog.Items.Insert(0, getCurrentLogDate() & "START monitoring RAW files at " & monitoredFolder)
+        ' Sets the timer interval (millisec).
+        myTimer.Start()
 
-    '    If debugMode Then checkFolderPermissions(monitoredFolder)
+        lbLog.Items.Insert(0, getCurrentLogDate() & "START monitoring RAW files at " & monitoredfolder)
 
-    'End Sub
+        If debugMode Then checkFolderPermissions(monitoredfolder)
 
-    '' FILE MANAGER -----------------------> 
-    'Private Sub filesManager(myObject As Object, myEventArgs As EventArgs)
-    '    Dispatcher.Invoke(Sub()
-    '                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Checking monitored local folder...")
-    '                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] filesManager started.")
-    '                          myTimer.Stop()
-    '                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] myTimer stopped.")
-    '                          If checkNetworkConn() Then
-    '                              networkErrorMessageCounter = 0
-    '                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Network connection OK.")
-    '                              If IO.Directory.Exists(monitoredFolder) Then 'Check if local folder exists.
-    '                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Monitored folder OK.")
-    '                                  'Check if the "processed" folder exists. If not, create it. 
-    '                                  Dim processedFolderTarget As String = monitoredFolder & "\" & processedFolderString
-    '                                  If IO.Directory.Exists(processedFolderTarget) Then
-    '                                      Dim foundFiles As New ArrayList(Directory.GetFiles(monitoredFolder, "*.raw"))
-    '                                      If foundFiles.Count Then
-    '                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Found files to process.")
-    '                                          Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
-    '                                          Dim cleanFilesList As ArrayList = getCleanFileList(notInBlackListFiles)
-    '                                          If cleanFilesList.Count Then
-    '                                              stopped = False
-    '                                              If Not bw.IsBusy = True Then
-    '                                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Running worker to upload the file to SFTP...")
-    '                                                  Dim filenameToUpload As String = cleanFilesList.Item(0)
-    '                                                  Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) 'Load RAW file with Thermo lib
-    '                                                  Dim rawFileClient As String = rawFile.SampleInformation.UserText.GetValue(1)
-    '                                                  Dim rawFileAgendoID As String = rawFile.SampleInformation.UserText.GetValue(3)
-    '                                                  Dim rawFileDatabase As String = rawFile.SampleInformation.UserText.GetValue(4)
-    '                                                  If Not rawFile.IsError Then
-    '                                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File IS NOT in ERROR state: " & filenameToUpload)
-    '                                                      'Check if remote output folder exists. If not, create it. 
-    '                                                      rawFile.SelectInstrument(instrumentType:=0, 1)
-    '                                                      'Dim instrumentFolder As String = rawFile.GetInstrumentData().SerialNumber
-    '                                                      'sftp_output_folder = "/" + rawFile.GetInstrumentData().Model.ToString.Replace(" ", "_").ToLower + "_" + instrumentFolder + "/raw/" + getCurrentMonthFolder() + "/" + rawFile.SampleInformation.UserText.GetValue(1) 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
-    '                                                      Dim instrumentFolder As String = cbInstruments.SelectedItem.ToString
-    '                                                      sftp_output_folder = "/" + instrumentFolder + "/Raw/" + getCurrentMonthFolder() + "/" + rawFileClient 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
-    '                                                      rawFile.Dispose() '------>Close rawFile by Thermo lib
-    '                                                      If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than 2GB
-    '                                                          'UPLOAD file to FTP:
-    '                                                          bw.RunWorkerAsync(New String() {SFTPuserString, SFTPpasswordString, filenameToUpload, rawFileDatabase, rawFileAgendoID, rawFileClient})
-    '                                                      Else
-    '                                                          lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] The file " & filenameToUpload & " is greater than 2GB so it won't be uploaded.")
-    '                                                          myTimer.Start()
-    '                                                      End If
-    '                                                  Else
-    '                                                      myTimer.Start()
-    '                                                  End If
-    '                                              End If
-    '                                          Else
-    '                                              myTimer.Start()
-    '                                          End If
-    '                                      Else
-    '                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] No files to process.")
-    '                                          myTimer.Start() 'No files to process.
-    '                                      End If
-    '                                  Else
-    '                                      System.IO.Directory.CreateDirectory(processedFolderTarget)
-    '                                      lbLog.Items.Insert(0, getCurrentLogDate() & processedFolderTarget & " folder created")
-    '                                      myTimer.Start()
-    '                                  End If
-    '                              Else
-    '                                  lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.")
-    '                                  myTimer.Start()
-    '                              End If
-    '                          Else
-    '                              If networkErrorMessageCounter < 3 Then
-    '                                  lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Network connection not available. Please check.")
-    '                                  networkErrorMessageCounter = networkErrorMessageCounter + 1
-    '                              End If
-    '                              myTimer.Start()
-    '                          End If
-    '                      End Sub)
-    'End Sub
+    End Sub
+
+    ' FILE MANAGER -----------------------> 
+    Private Sub filesManager(myObject As Object, myEventArgs As EventArgs)
+        Dispatcher.Invoke(Sub()
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Checking monitored local folder...")
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] filesManager started.")
+                              myTimer.Stop()
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] myTimer stopped.")
+                              If checkNetworkConn() Then
+                                  networkErrorMessageCounter = 0
+                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Network connection OK.")
+                                  If IO.Directory.Exists(monitoredfolder) Then 'Check if local folder exists.
+                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Monitored folder OK.")
+                                      'Check if the "processed" folder exists. If not, create it. 
+                                      Dim processedFolderTarget As String = monitoredfolder & "\" & processedfolderstring
+                                      If IO.Directory.Exists(processedFolderTarget) Then
+                                          Dim foundFiles As New ArrayList(Directory.GetFiles(monitoredfolder, "*.raw"))
+                                          If foundFiles.Count Then
+                                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Found files to process.")
+                                              Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
+                                              Dim cleanFilesList As ArrayList = getCleanFileList(notInBlackListFiles)
+                                              If cleanFilesList.Count Then
+                                                  stopped = False
+                                                  If Not bw.IsBusy = True Then
+                                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Running worker to upload the file to SFTP...")
+                                                      Dim filenameToUpload As String = cleanFilesList.Item(0)
+                                                      Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) 'Load RAW file with Thermo lib
+                                                      If Not rawFile.IsError Then
+                                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File IS NOT in ERROR state: " & filenameToUpload)
+                                                          rawFile.SelectInstrument(instrumentType:=0, 1)
+                                                          Dim serial As String = rawFile.GetInstrumentData().SerialNumber
+                                                          Dim model As String = rawFile.GetInstrumentData().Model
+                                                          Dim name As String = rawFile.GetInstrumentData().Name
+                                                          Dim userlabel As String = rawFile.UserLabel.ToString
+                                                          Dim friendlyname As String = rawFile.GetAllInstrumentFriendlyNamesFromInstrumentMethod().ToString
+                                                          Dim method As String = rawFile.GetInstrumentMethod(0).ToString
+                                                          'sftp_output_folder = "/" + rawFile.GetInstrumentData().Model.ToString.Replace(" ", "_").ToLower + "_" + instrumentFolder + "/raw/" + getCurrentMonthFolder() + "/" + rawFile.SampleInformation.UserText.GetValue(1) 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
+                                                          'Dim instrumentFolder As String = cbInstruments.SelectedItem.ToString
+                                                          'sftp_output_folder = "/" + instrumentFolder + "/Raw/" + getCurrentMonthFolder() + "/" + rawFileClient 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
+                                                          rawFile.Dispose() '------>Close rawFile by Thermo lib
+                                                          If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than 2GB
+                                                              'UPLOAD file to FTP:
+                                                              'bw.RunWorkerAsync(New String() {SFTPuserString, SFTPpasswordString, filenameToUpload, rawFileDatabase, rawFileAgendoID, rawFileClient})
+                                                          Else
+                                                              lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] The file " & filenameToUpload & " is greater than 2GB so it won't be uploaded.")
+                                                              myTimer.Start()
+                                                          End If
+                                                      Else
+                                                          myTimer.Start()
+                                                      End If
+                                                  End If
+                                              Else
+                                                  myTimer.Start()
+                                              End If
+                                          Else
+                                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] No files to process.")
+                                              myTimer.Start() 'No files to process.
+                                          End If
+                                      Else
+                                          System.IO.Directory.CreateDirectory(processedFolderTarget)
+                                          lbLog.Items.Insert(0, getCurrentLogDate() & processedFolderTarget & " folder created")
+                                          myTimer.Start()
+                                      End If
+                                  Else
+                                      '                                  lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.")
+                                      myTimer.Start()
+                                  End If
+                              Else
+                                  If networkErrorMessageCounter < 3 Then
+                                      lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Network connection not available. Please check.")
+                                      networkErrorMessageCounter = networkErrorMessageCounter + 1
+                                  End If
+                                  myTimer.Start()
+                              End If
+                          End Sub)
+    End Sub
 
     Private Sub bCopyLogToClipboard_Click(sender As Object, e As RoutedEventArgs) Handles bCopyLogToClipboard.Click
 
