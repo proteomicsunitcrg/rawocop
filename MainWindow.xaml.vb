@@ -48,28 +48,27 @@ Class MainWindow
         cbSubFolder1.Items.Add("Instrument Name")
         cbSubFolder1.Items.Add("Serial Number")
         cbSubFolder1.Items.Add("YYMM")
-        cbSubFolder1.Items.Add("Method Name")
+        'cbSubFolder1.Items.Add("Method Name")
         cbSubFolder2.Items.Add("Instrument Name")
         cbSubFolder2.Items.Add("Serial Number")
         cbSubFolder2.Items.Add("YYMM")
-        cbSubFolder2.Items.Add("Method Name")
+        'cbSubFolder2.Items.Add("Method Name")
         cbSubFolder3.Items.Add("Instrument Name")
         cbSubFolder3.Items.Add("Serial Number")
         cbSubFolder3.Items.Add("YYMM")
-        cbSubFolder3.Items.Add("Method Name")
-        cbSubFolder4.Items.Add("Instrument Name")
-        cbSubFolder4.Items.Add("Serial Number")
-        cbSubFolder4.Items.Add("YYMM")
-        cbSubFolder4.Items.Add("Method Name")
+        'cbSubFolder3.Items.Add("Method Name")
+        'cbSubFolder4.Items.Add("Instrument Name")
+        'cbSubFolder4.Items.Add("Serial Number")
+        'cbSubFolder4.Items.Add("YYMM")
+        'cbSubFolder4.Items.Add("Method Name")
         cbSubFolder1.IsEnabled = False
         cbSubFolder2.IsEnabled = False
         cbSubFolder3.IsEnabled = False
-        cbSubFolder4.IsEnabled = False
+        'cbSubFolder4.IsEnabled = False
         tbxInputFolderSummary.IsEnabled = False
         tbxOutputFolderSummary.IsEnabled = False
         tbxInputFolder.IsEnabled = False
         tbxOutputRootFolder.IsEnabled = False
-
         tbxInputFolderSummary.Text = tbxInputFolder.Text
 
     End Sub
@@ -87,9 +86,9 @@ Class MainWindow
         tbxOutputFolderSummary.Text = tbxOutputRootFolder.Text & "\" & cbSubFolder1.SelectedItem & "\" & cbSubFolder2.SelectedItem & "\" & cbSubFolder3.SelectedItem
     End Sub
 
-    Private Sub cbSubFolder4_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles cbSubFolder4.SelectionChanged
-        tbxOutputFolderSummary.Text = tbxOutputRootFolder.Text & "\" & cbSubFolder1.SelectedItem & "\" & cbSubFolder2.SelectedItem & "\" & cbSubFolder3.SelectedItem & "\" & cbSubFolder4.SelectedItem
-    End Sub
+    'Private Sub cbSubFolder4_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles cbSubFolder4.SelectionChanged
+    '    tbxOutputFolderSummary.Text = tbxOutputRootFolder.Text & "\" & cbSubFolder1.SelectedItem & "\" & cbSubFolder2.SelectedItem & "\" & cbSubFolder3.SelectedItem & "\" & cbSubFolder4.SelectedItem
+    'End Sub
 
     Private Sub bInputfolder_Click(sender As Object, e As RoutedEventArgs) Handles bInputfolder.Click
         Dim dialog As New FolderBrowserDialog()
@@ -131,7 +130,7 @@ Class MainWindow
             cbSubFolder1.IsEnabled = True
             cbSubFolder2.IsEnabled = True
             cbSubFolder3.IsEnabled = True
-            cbSubFolder4.IsEnabled = True
+            'cbSubFolder4.IsEnabled = True
         End If
 
     End Sub
@@ -142,11 +141,11 @@ Class MainWindow
             cbSubFolder1.IsEnabled = False
             cbSubFolder2.IsEnabled = False
             cbSubFolder3.IsEnabled = False
-            cbSubFolder4.IsEnabled = False
+            'cbSubFolder4.IsEnabled = False
             cbSubFolder1.Text = ""
             cbSubFolder2.Text = ""
             cbSubFolder3.Text = ""
-            cbSubFolder4.Text = ""
+            'cbSubFolder4.Text = ""
             tbxOutputFolderSummary.Text = tbxOutputRootFolder.Text
 
         End If
@@ -208,15 +207,15 @@ Class MainWindow
 
     End Function
 
-    Private Function moveFileToProcessedFolder(fileToMove As String, processedTargetFilename As String, processedFolder As String) As Boolean
+    Private Function moveFile(OriginFullPath As String, targetOnlyfolder As String, targetFullPath As String) As Boolean
         Try
-            If (Not System.IO.Directory.Exists(processedFolder)) Then
-                System.IO.Directory.CreateDirectory(processedFolder)
+            If (Not System.IO.Directory.Exists(targetFullPath)) Then
+                System.IO.Directory.CreateDirectory(targetFullPath)
             End If
-            If File.Exists(processedTargetFilename) Then
-                File.Delete(processedTargetFilename)
+            If File.Exists(targetFullPath) Then
+                File.Delete(targetFullPath)
             End If
-            File.Move(fileToMove, processedTargetFilename)
+            File.Move(OriginFullPath, targetFullPath)
         Catch ex As Exception
             Console.Write(ex.Message)
             Return False
@@ -291,93 +290,98 @@ Class MainWindow
     Private Sub bw_DoWork(ByVal sender As Object, ByVal e As DoWorkEventArgs)
         Dim worker As BackgroundWorker = CType(sender, BackgroundWorker)
         Dim workerInputs As String() = e.Argument
-        uploadresultcode = movetobackupfolder(workerInputs(0), workerInputs(1))
+        uploadresultcode = moveFileToTarget(workerInputs(0), workerInputs(1), workerInputs(2))
         e.Result = localpathtouploadfile
     End Sub
 
-    'Private Sub bw_RunWorkerCompleted(ByVal sender As Object, ByVal e As RunWorkerCompletedEventArgs)
+    ' Backups file (Move or SFTP)
+    Private Function moveFileToTarget(OriginFullPath As String, targetOnlyfolder As String, targetFullPath As String) As ArrayList
 
-    '    If Not stopped Then
+        Dim isUploadStorageOK As Boolean = True
+        Dim isEverythingOK As Boolean = True
+        Dim uploadStorageCode As String = "ST-OK"
+        Dim output As New ArrayList()
 
-    '        Dim uploadResultCodeStorage = uploadResultCode.Item(0)
-    '        Dim uploadResultCodeQSample = uploadResultCode.Item(1)
-    '        Dim isMovedProcessed As Boolean = False
+        Try
+            'Upload file when applies
+            If Not stopped Then
+                Try
+                    'Move files 
+                    If moveFile(OriginFullPath, targetOnlyfolder, targetFullPath) Then
+                        lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & targetFullPath & " moved to backup folder " & targetFullPath)
+                        isUploadStorageOK = True
+                    Else
+                        lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & targetFullPath & " moved to backup folder " & targetFullPath & ". Please check.")
+                    End If
 
-    '        '--------------OK:
 
-    '        ' If Upload to storage OK:
-    '        If uploadResultCodeStorage Is "ST-OK" Then
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & Path.GetFileName(e.Result) & " uploaded to Storage!")
-    '            initializeFlags()
-    '            If Not isMovedProcessed Then
-    '                Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedFolderString & "\" & getCurrentMonthFolder()
-    '                'Move files to processed folder
-    '                If moveFileToProcessedFolder(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
-    '                    lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & e.Result & " moved to processed folder")
-    '                    isMovedProcessed = True
-    '                Else
-    '                    lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.")
-    '                End If
-    '            End If
-    '        End If
+                Catch uploadex As Exception
+                    If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Move exception: " & uploadex.Message)
+                    Console.WriteLine(uploadex.Message)
+                    Console.WriteLine(uploadex.StackTrace)
+                    Console.WriteLine(uploadex.InnerException)
+                    uploadStorageCode = "UC-SFTP-GEN"
+                End Try
 
-    '        If uploadResultCodeQSample Is "QS-OK" Then
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & Path.GetFileName(e.Result) & " uploaded to QSample!")
-    '            initializeFlags()
-    '            If Not isMovedProcessed Then
-    '                Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedFolderString & "\" & getCurrentMonthFolder()
-    '                'Move files to processed folder
-    '                If moveFileToProcessedFolder(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
-    '                    lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & e.Result & " moved to processed folder")
-    '                    isMovedProcessed = True
-    '                Else
-    '                    lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.")
-    '                End If
-    '            End If
-    '        End If
+            End If
 
-    '        '--------------ERR:
+        Catch genex As Exception
+            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] General exception: " & genex.Message)
+        End Try
 
-    '        ' If Upload to storage interrupted. Reason: file already exists
-    '        If uploadResultCodeStorage Is "UC-ST-EX" Then
-    '            BlackListOfFiles.Add(Path.GetFileName(e.Result))
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] Upload to Storage failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
-    '            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload to storage failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
-    '        End If
+        output.Add(uploadStorageCode)
 
-    '        ' If Upload to QSample interrupted. Reason: file already exists
-    '        If uploadResultCodeQSample Is "UC-QS-EX" Then
-    '            BlackListOfFiles.Add(Path.GetFileName(e.Result))
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] File not uploaded to QSample. Reason: file " & Path.GetFileName(e.Result) & " already exists.")
-    '            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload to QSample failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
-    '        End If
+        Return output
 
-    '        ' If Upload to QSample interrupted. Reason: file is not 9606
-    '        If uploadResultCodeQSample Is "UC-QS-9606" Then
-    '            BlackListOfFiles.Add(Path.GetFileName(e.Result))
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] File not uploaded to QSample. Reason: file " & Path.GetFileName(e.Result) & " has not Database field informed.")
-    '            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File not uploaded to QSample. Reason: file " & Path.GetFileName(e.Result) & " has not Database field informed.")
-    '        End If
+    End Function
 
-    '        ' If everything went wrong. Reason: general error. 
-    '        If uploadResultCodeStorage Is "UC-SFTP-GEN" Or uploadResultCodeQSample Is "UC-SFTP-GEN" Then
-    '            BlackListOfFiles.Add(Path.GetFileName(e.Result))
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] General upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a general error.")
-    '            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a general error.")
-    '        End If
+    Private Sub bw_RunWorkerCompleted(ByVal sender As Object, ByVal e As RunWorkerCompletedEventArgs)
 
-    '        ' If everything went wrong. Reason: connection error. 
-    '        If uploadResultCodeStorage Is "UC-SFTP-CONN" Or uploadResultCodeQSample Is "UC-SFTP-CONN" Then
-    '            BlackListOfFiles.Add(Path.GetFileName(e.Result))
-    '            lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] General upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a connectivity error.")
-    '            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a connectivity error.")
-    '        End If
+        If Not stopped Then
 
-    '    End If
+            Dim uploadResultCodeStorage = uploadresultcode.Item(0)
+            Dim isMovedProcessed As Boolean = False
 
-    '    myTimer.Start()
+            ' If Upload to storage OK:
+            If uploadResultCodeStorage Is "ST-OK" Then
+                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & Path.GetFileName(e.Result) & " uploaded to Storage!")
+                initializeFlags()
+                If Not isMovedProcessed Then
+                    Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedfolderstring & "\" & getCurrentMonthFolder()
+                    'Move files to processed folder
+                    If moveFile(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
+                        lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & e.Result & " moved to processed folder")
+                        isMovedProcessed = True
+                    Else
+                        lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & e.Result & " cannot be moved to processed folder. Please check.")
+                    End If
+                End If
+            End If
 
-    'End Sub
+            ' If Upload to storage interrupted. Reason: file already exists
+            If uploadResultCodeStorage Is "UC-ST-EX" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] Upload to Storage failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload to storage failed! Reason: file " & Path.GetFileName(e.Result) & " already exists.")
+            End If
+
+            ' If everything went wrong. Reason: general error. 
+            If uploadResultCodeStorage Is "UC-SFTP-GEN" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] General upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a general error.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a general error.")
+            End If
+            ' If everything went wrong. Reason: connection error. 
+            If uploadResultCodeStorage Is "UC-SFTP-CONN" Then
+                BlackListOfFiles.Add(Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] General upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a connectivity error.")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Upload error! Reason: file " & Path.GetFileName(e.Result) & " could not be uploaded because of a connectivity error.")
+            End If
+        End If
+
+        myTimer.Start()
+
+    End Sub
 
     Private Sub bstopsync_click(sender As Object, e As RoutedEventArgs) Handles bStopSync.Click
         If bw.WorkerSupportsCancellation = True Then
@@ -449,21 +453,48 @@ Class MainWindow
                                                       Dim filenameToUpload As String = cleanFilesList.Item(0)
                                                       Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) 'Load RAW file with Thermo lib
                                                       If Not rawFile.IsError Then
+
                                                           If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File IS NOT in ERROR state: " & filenameToUpload)
                                                           rawFile.SelectInstrument(instrumentType:=0, 1)
                                                           Dim serial As String = rawFile.GetInstrumentData().SerialNumber
-                                                          Dim model As String = rawFile.GetInstrumentData().Model
-                                                          Dim name As String = rawFile.GetInstrumentData().Name
-                                                          Dim userlabel As String = rawFile.UserLabel.ToString
-                                                          Dim friendlyname As String = rawFile.GetAllInstrumentFriendlyNamesFromInstrumentMethod().ToString
-                                                          Dim method As String = rawFile.GetInstrumentMethod(0).ToString
-                                                          'sftp_output_folder = "/" + rawFile.GetInstrumentData().Model.ToString.Replace(" ", "_").ToLower + "_" + instrumentFolder + "/raw/" + getCurrentMonthFolder() + "/" + rawFile.SampleInformation.UserText.GetValue(1) 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
-                                                          'Dim instrumentFolder As String = cbInstruments.SelectedItem.ToString
-                                                          'sftp_output_folder = "/" + instrumentFolder + "/Raw/" + getCurrentMonthFolder() + "/" + rawFileClient 'Storage structure: instrument_serialnumber/raw/ + /YYMM/ + /client
+                                                          Dim name As String = rawFile.GetInstrumentData().Name.ToString.Replace(" ", "_").ToLower
+                                                          Dim yymm As String = getCurrentMonthFolder()
+                                                          Dim cb_folder As String = ""
+
+                                                          If cbSubFolder1.SelectedIndex <> -1 Then
+                                                              If cbSubFolder1.SelectedValue.ToString() Is "Serial Number" Then
+                                                                  cb_folder = "\" + serial
+                                                              ElseIf cbSubFolder1.SelectedValue.ToString() Is "Instrument Name" Then
+                                                                  cb_folder = "\" + name
+                                                              ElseIf cbSubFolder1.SelectedValue.ToString() Is "YYMM" Then
+                                                                  cb_folder = "\" + yymm
+                                                              End If
+                                                          End If
+                                                          If cbSubFolder2.SelectedIndex <> -1 Then
+                                                              If cbSubFolder2.SelectedValue.ToString() Is "Serial Number" Then
+                                                                  cb_folder = cb_folder + "\" + serial
+                                                              ElseIf cbSubFolder2.SelectedValue.ToString() Is "Instrument Name" Then
+                                                                  cb_folder = cb_folder + "\" + name
+                                                              ElseIf cbSubFolder2.SelectedValue.ToString() Is "YYMM" Then
+                                                                  cb_folder = cb_folder + "\" + yymm
+                                                              End If
+                                                          End If
+                                                          If cbSubFolder3.SelectedIndex <> -1 Then
+                                                              If cbSubFolder3.SelectedValue.ToString() Is "Serial Number" Then
+                                                                  cb_folder = cb_folder + "\" + serial
+                                                              ElseIf cbSubFolder3.SelectedValue.ToString() Is "Instrument Name" Then
+                                                                  cb_folder = cb_folder + "\" + name
+                                                              ElseIf cbSubFolder3.SelectedValue.ToString() Is "YYMM" Then
+                                                                  cb_folder = cb_folder + "\" + yymm
+                                                              End If
+                                                          End If
+
+                                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Backup target folder is: " & cb_folder)
+
                                                           rawFile.Dispose() '------>Close rawFile by Thermo lib
                                                           If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than 2GB
-                                                              'UPLOAD file to FTP:
-                                                              'bw.RunWorkerAsync(New String() {SFTPuserString, SFTPpasswordString, filenameToUpload, rawFileDatabase, rawFileAgendoID, rawFileClient})
+                                                              'BACKUP file:
+                                                              bw.RunWorkerAsync(New String() {filenameToUpload, Path.GetDirectoryName(filenameToUpload) & cb_folder, Path.GetFileName(filenameToUpload)})
                                                           Else
                                                               lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] The file " & filenameToUpload & " is greater than 2GB so it won't be uploaded.")
                                                               myTimer.Start()
@@ -485,7 +516,7 @@ Class MainWindow
                                           myTimer.Start()
                                       End If
                                   Else
-                                      '                                  lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.")
+                                      'lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Local folder " & monitoredFolder & " not found. Please check.")
                                       myTimer.Start()
                                   End If
                               Else
