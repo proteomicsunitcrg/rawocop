@@ -207,10 +207,10 @@ Class MainWindow
 
     End Function
 
-    Private Function moveFile(OriginFullPath As String, targetOnlyfolder As String, targetFullPath As String) As Boolean
+    Private Function moveFile(OriginFullPath As String, targetFullPath As String, targetOnlyfolder As String) As Boolean
         Try
-            If (Not System.IO.Directory.Exists(targetFullPath)) Then
-                System.IO.Directory.CreateDirectory(targetFullPath)
+            If (Not System.IO.Directory.Exists(targetOnlyfolder)) Then
+                System.IO.Directory.CreateDirectory(targetOnlyfolder)
             End If
             If File.Exists(targetFullPath) Then
                 File.Delete(targetFullPath)
@@ -295,8 +295,9 @@ Class MainWindow
     End Sub
 
     ' Backups file (Move or SFTP)
-    Private Function moveFileToTarget(OriginFullPath As String, targetOnlyfolder As String, targetFullPath As String) As ArrayList
+    Private Function moveFileToTarget(filenameToUpload As String, OriginFullPath As String, targetOnlyfolder As String) As ArrayList
 
+        Dim targetFullPath As String = targetOnlyfolder & "\" & filenameToUpload
         Dim isUploadStorageOK As Boolean = True
         Dim isEverythingOK As Boolean = True
         Dim uploadStorageCode As String = "ST-OK"
@@ -307,7 +308,7 @@ Class MainWindow
             If Not stopped Then
                 Try
                     'Move files 
-                    If moveFile(OriginFullPath, targetOnlyfolder, targetFullPath) Then
+                    If moveFile(OriginFullPath, targetFullPath, targetOnlyfolder) Then
                         lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & targetFullPath & " moved to backup folder " & targetFullPath)
                         isUploadStorageOK = True
                     Else
@@ -494,7 +495,8 @@ Class MainWindow
                                                           rawFile.Dispose() '------>Close rawFile by Thermo lib
                                                           If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than 2GB
                                                               'BACKUP file:
-                                                              bw.RunWorkerAsync(New String() {filenameToUpload, Path.GetDirectoryName(filenameToUpload) & cb_folder, Path.GetFileName(filenameToUpload)})
+                                                              bw.RunWorkerAsync(New String() {Path.GetFileName(filenameToUpload), filenameToUpload, Path.GetDirectoryName(filenameToUpload) & cb_folder})
+
                                                           Else
                                                               lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] The file " & filenameToUpload & " is greater than 2GB so it won't be uploaded.")
                                                               myTimer.Start()
