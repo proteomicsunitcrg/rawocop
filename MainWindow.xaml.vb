@@ -36,7 +36,7 @@ Class MainWindow
         bw.WorkerSupportsCancellation = True
         AddHandler myTimer.Elapsed, AddressOf filesManager
         AddHandler bw.DoWork, AddressOf bw_DoWork
-        'AddHandler bw.RunWorkerCompleted, AddressOf bw_RunWorkerCompleted
+        AddHandler bw.RunWorkerCompleted, AddressOf bw_RunWorkerCompleted
 
         If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
 
@@ -294,7 +294,7 @@ Class MainWindow
         e.Result = localpathtouploadfile
     End Sub
 
-    ' Backups file (Move or SFTP)
+    ' Backups files
     Private Function moveFileToTarget(filenameToUpload As String, OriginFullPath As String, targetOnlyfolder As String) As ArrayList
 
         Dim targetFullPath As String = targetOnlyfolder & "\" & filenameToUpload
@@ -309,25 +309,19 @@ Class MainWindow
                 Try
                     'Move files 
                     If moveFile(OriginFullPath, targetFullPath, targetOnlyfolder) Then
-                        lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & targetFullPath & " moved to backup folder " & targetFullPath)
                         isUploadStorageOK = True
                     Else
-                        lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & targetFullPath & " moved to backup folder " & targetFullPath & ". Please check.")
+                        isUploadStorageOK = False
                     End If
 
-
                 Catch uploadex As Exception
-                    If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Move exception: " & uploadex.Message)
                     Console.WriteLine(uploadex.Message)
-                    Console.WriteLine(uploadex.StackTrace)
-                    Console.WriteLine(uploadex.InnerException)
-                    uploadStorageCode = "UC-SFTP-GEN"
                 End Try
 
             End If
 
         Catch genex As Exception
-            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] General exception: " & genex.Message)
+            Console.WriteLine(genex.Message)
         End Try
 
         output.Add(uploadStorageCode)
@@ -350,6 +344,7 @@ Class MainWindow
                 If Not isMovedProcessed Then
                     Dim processedTargetFolder As String = Path.GetDirectoryName(e.Result) & "\" & processedfolderstring & "\" & getCurrentMonthFolder()
                     'Move files to processed folder
+                    ' HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     If moveFile(Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), processedTargetFolder & "\" & Path.GetFileName(e.Result), processedTargetFolder) Then
                         lbLog.Items.Insert(0, getCurrentLogDate() & ":) File " & e.Result & " moved to processed folder")
                         isMovedProcessed = True
