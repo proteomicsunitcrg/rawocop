@@ -25,6 +25,7 @@
             <RowDefinition Height="5*"/>
             <RowDefinition Height="409*"/>
         </Grid.RowDefinitions>
+
         <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="274" Margin="22,115,0,0" VerticalAlignment="Top" Width="696" Grid.Row="9" Grid.ColumnSpan="4"/>
         <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="31" Margin="22,1.75,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="4" Grid.RowSpan="3" Grid.Row="1"/>
         <TextBox x:Name="tbxInputFolder" TabIndex="4" HorizontalAlignment="Left" Margin="10,6,0,10" TextWrapping="Wrap" Text="" Width="145" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"/>
@@ -39,7 +40,6 @@
         <Label x:Name="label_Copy" Content="Monitoring panel" HorizontalAlignment="Left" Margin="17,92,0,0" VerticalAlignment="Top" Grid.Row="9" Grid.ColumnSpan="3"/>
         <Button x:Name="bCopyLogToClipboard" Content="Copy Log to Clipboard" HorizontalAlignment="Left" Margin="55,125,0,0" VerticalAlignment="Top" Width="123" Grid.Row="9" Height="26" Grid.Column="3"/>
         <TextBlock x:Name="tbTitle" HorizontalAlignment="Left" Margin="440,285,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="9" Height="40" FontSize="27" FontFamily="Serif" Grid.Column="3"><Run Text=" "/><Run Text="  RAWocop"/></TextBlock>
-        <TextBlock x:Name="tbSubtitle" HorizontalAlignment="Left" Margin="443,320,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="9" Height="65" FontSize="15" FontFamily="Serif" Grid.Column="3"><Run Text=" "/><Run Text="  backup for masspec"/><LineBreak></LineBreak><Run Text="    Thermo Fisher files"/></TextBlock>
         <Button x:Name="buttonTestConn" TabIndex="4" Content="Test connectivity" HorizontalAlignment="Left" Margin="400,14,0,0" VerticalAlignment="Top" Width="122" Height="21" Visibility="Hidden" Grid.Row="4" Grid.Column="3" Grid.RowSpan="2"/>
         <TextBlock x:Name="tbOutputRootFolder" HorizontalAlignment="Left" Margin="240,9.75,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="90" Height="17" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"><Run Text="and store them "/><Run Text="to"/></TextBlock>
         <TextBox x:Name="tbxOutputRootFolder" TabIndex="4" HorizontalAlignment="Left" Margin="335,6,0,10" TextWrapping="Wrap" Text="" Width="185" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"/>
@@ -61,5 +61,6 @@
         <TextBlock x:Name="textBlock_Copy3" HorizontalAlignment="Left" Margin="230,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>
         <!--<TextBlock x:Name="textBlock_Copy4" HorizontalAlignment="Left" Margin="382,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>-->
         <CheckBox x:Name="cbDiscardQCloudFiles" Content="Discard QCloud files" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="70,3,0,0" Grid.Row="4" Grid.Column="3"/>
+        <Image Source="/robocop21.png" Grid.Column="3" Margin="470,315,57,0" Grid.Row="9" Height="60" VerticalAlignment="Top" />
     </Grid>
 </Window>
