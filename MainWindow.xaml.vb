@@ -7,12 +7,11 @@ Imports ThermoFisher.CommonCore.RawFileReader
 Class MainWindow
 
     'Hardcodes: 
-    Dim min_interval As String = "300000" 'millisec
-    Dim MinFileSize As Long = 500000 '0.5 MB
+    Dim MinFileSize As Long = 10000000 '10 MB
     Dim MaxFileSize As Long = 10000000000 '10 GB
 
     'Declarations and definitions:
-    Dim debugMode As Boolean = True '--------------DEBUG
+    Dim debugMode As Boolean = False '<--------------DEBUG MODE SWITCH
     Private Shared myTimer As New Timers.Timer
     Dim bw As BackgroundWorker = New BackgroundWorker
     Dim flagerr01 As Boolean = False
@@ -21,13 +20,9 @@ Class MainWindow
     Dim stopped As Boolean = False
     Dim localpathtouploadfile As String = ""
     Dim monitoredfolder As String = ""
-    Dim processedfolderstring As String = ""
     Private Shared BlackListOfFiles As New ArrayList()
     Private Shared notInUseListOfFiles As New ArrayList()
-    Dim networkErrorMessageCounter As Integer = 0
-    Dim fileChecksum As String = ""
     Dim excludeQCloudFile As Boolean = False
-
 
     Public Sub New()
 
@@ -39,10 +34,11 @@ Class MainWindow
         AddHandler bw.RunWorkerCompleted, AddressOf bw_RunWorkerCompleted
 
         If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
-
         If debugMode Then tbxInputFolder.Text = "C:\rolivella\XCalibur\data"
         If debugMode Then tbxOutputRootFolder.Text = "C:\rolivella\XCalibur\backup"
-        If debugMode Then tbxOutputFolderSummary.Text = "C:\rolivella\XCalibur\backup"
+        'If debugMode Then tbxOutputFolderSummary.Text = "C:\rolivella\XCalibur\backup"
+        If debugMode Then tbxOutputRootFolder.Text = "Z:\data\orbitrap_xl\qcml"
+
         cbSubFolder1.Items.Add("Instrument Name")
         cbSubFolder1.Items.Add("Serial Number")
         cbSubFolder1.Items.Add("YYMM")
@@ -55,12 +51,23 @@ Class MainWindow
         cbSubFolder1.IsEnabled = False
         cbSubFolder2.IsEnabled = False
         cbSubFolder3.IsEnabled = False
+        bStartSync.IsEnabled = False
+        bStopSync.IsEnabled = False
+        bClearLog.IsEnabled = False
+        bCopyLogToClipboard.IsEnabled = False
         cbDiscardQCloudFiles.IsChecked = True
         tbxInputFolderSummary.IsEnabled = False
         tbxOutputFolderSummary.IsEnabled = False
         tbxInputFolder.IsEnabled = False
         tbxOutputRootFolder.IsEnabled = False
         tbxInputFolderSummary.Text = tbxInputFolder.Text
+
+        If debugMode Then bStartSync.IsEnabled = True
+        If debugMode Then bStopSync.IsEnabled = True
+        If debugMode Then bClearLog.IsEnabled = True
+        If debugMode Then bCopyLogToClipboard.IsEnabled = True
+
+        If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "------------DEBUG MODE ON------------")
 
     End Sub
 
@@ -96,6 +103,10 @@ Class MainWindow
         If dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
             tbxOutputRootFolder.Text = dialog.SelectedPath
             tbxOutputFolderSummary.Text = dialog.SelectedPath
+            bStartSync.IsEnabled = True
+            bStopSync.IsEnabled = True
+            bClearLog.IsEnabled = True
+            bCopyLogToClipboard.IsEnabled = True
         End If
     End Sub
 
@@ -127,24 +138,6 @@ Class MainWindow
         End If
     End Sub
 
-    Private Function checkNetworkConn() As Boolean
-        If Not My.Computer.Network.IsAvailable Then
-            Return False
-        End If
-        Return True
-    End Function
-
-    Private Sub checkFolderPermissions(folder As String)
-        Dim fileSec = System.IO.File.GetAccessControl(monitoredfolder)
-        Dim accessRules = fileSec.GetAccessRules(True, True, GetType(System.Security.Principal.NTAccount))
-        For Each rule As System.Security.AccessControl.FileSystemAccessRule In accessRules
-            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Identity Reference: " & rule.IdentityReference.Value)
-            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Access Control Type: " & rule.AccessControlType.ToString())
-            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File System Rights: " & rule.FileSystemRights.ToString())
-            Exit For
-        Next
-    End Sub
-
     Private Function getCurrentLogDate() As String
         Dim currentDate As DateTime = DateTime.Now
         Dim currentMonthFolder As String
@@ -157,22 +150,6 @@ Class MainWindow
         Dim currentMonthFolder As String
         currentMonthFolder = Format$(currentDate, "yyMM")
         Return currentMonthFolder
-    End Function
-
-    Private Function moveFile(OriginFullPath As String, targetFullPath As String, targetOnlyfolder As String) As Boolean
-        Try
-            If (Not System.IO.Directory.Exists(targetOnlyfolder)) Then
-                System.IO.Directory.CreateDirectory(targetOnlyfolder)
-            End If
-            If File.Exists(targetFullPath) Then
-                File.Delete(targetFullPath)
-            End If
-            File.Move(OriginFullPath, targetFullPath)
-        Catch ex As Exception
-            Console.Write(ex.Message)
-            Return False
-        End Try
-        Return True
     End Function
 
     Private Sub showRecurrentErrorMessage(message As String, errorCode As String)
@@ -207,25 +184,23 @@ Class MainWindow
             If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Checking file state: " & file)
             If IsFileInUse(file) Then
                 notInUseListOfFiles.Remove(file)
-                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File in use: " & file)
+                showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] File cannot be moved because is locked by another program. Please check. File: " & file, "ERR01")
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File cannot be moved because is locked by another program. Please check. File: " & file)
             Else
                 Dim filereader As System.IO.FileInfo = My.Computer.FileSystem.GetFileInfo(file)
                 Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(file) 'Load RAW file with Thermo lib
                 Try
                     rawFile.SelectInstrument(instrumentType:=0, 1)
                     If filereader.Length > MinFileSize Then ' Check that the file has a minimum size
-                        Dim sampleType As String = rawFile.SampleInformation.SampleType.ToString
-                        Dim client As String = rawFile.SampleInformation.UserText.GetValue(1)
-                        Dim database As String = rawFile.SampleInformation.UserText.GetValue(4)
-                        If sampleType = "QC" And (client = "QC01" Or client = "QC02" Or client = "QC03") And Not excludeQCloudFile Then ' Does not includes QCrawler files
-                            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] QCrawler file so it is not included to the upload." & file)
-                        ElseIf database.ToLower = "undefined" Or database.ToLower = "na" Or database.ToLower = "n/a" Then
-                            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Undefined or N/A so it is not included to the upload." & file)
+                        If (file.ToString.Contains("QC01") Or file.ToString.Contains("QC02") Or file.ToString.Contains("QC03")) And Not excludeQCloudFile Then ' Does not includes QCrawler files
+                            showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] File not moved because is a QCloud file (QC01 or QC02). File: " & file, "ERR01")
+                            If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File not moved because is a QCloud file (QC01 or QC02). File: " & file)
                         Else
                             notInUseListOfFiles.Add(file)
                         End If
                     ElseIf filereader.Length <= MinFileSize Then
                         notInUseListOfFiles.Remove(file)
+                        showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] File not moved because is too small. The minimum is " & Math.Round(MinFileSize / 1048576) & "MB", "ERR01")
                     End If
                 Catch ex As Exception
                     If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Instrument index not available for requested device" & vbCrLf & "Parameter name: instrumentIndex" & ex.Message)
@@ -246,7 +221,7 @@ Class MainWindow
         e.Result = localpathtouploadfile
     End Sub
 
-    ' Backups files
+    ' Move files manager
     Private Function moveFileToTarget(filenameToUpload As String, OriginFullPath As String, targetOnlyfolder As String) As ArrayList
 
         Dim targetFullPath As String = targetOnlyfolder & "\" & filenameToUpload
@@ -286,6 +261,24 @@ Class MainWindow
 
     End Function
 
+    ' Move files
+    Private Function moveFile(OriginFullPath As String, targetFullPath As String, targetOnlyfolder As String) As Boolean
+        Try
+            If (Not System.IO.Directory.Exists(targetOnlyfolder)) Then
+                System.IO.Directory.CreateDirectory(targetOnlyfolder)
+            End If
+            If File.Exists(targetFullPath) Then
+                'File.Delete(targetFullPath)
+                showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] Repeated file at destination folder! So it will not be moved.", "ERR01")
+            End If
+            File.Move(OriginFullPath, targetFullPath)
+        Catch ex As Exception
+            showRecurrentErrorMessage(getCurrentLogDate() & "[ERROR] Reason: " & ex.Message, "ERR01")
+            Return False
+        End Try
+        Return True
+    End Function
+
     Private Sub bw_RunWorkerCompleted(ByVal sender As Object, ByVal e As RunWorkerCompletedEventArgs)
 
         If Not stopped Then
@@ -293,11 +286,10 @@ Class MainWindow
             Dim uploadResultCodeStorage = uploadresultcode.Item(0)
 
             If uploadResultCodeStorage Is "ST-OK" Then
-                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File backuped successfully to " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
-                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & ":) File backuped successfully to " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File moved successfully to " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
+                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & ":) File moved successfully to " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
             ElseIf uploadResultCodeStorage Is "ST-ERR" Then
-                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Failed to backup file " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
-                If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Failed to backup file " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
+                showRecurrentErrorMessage(getCurrentLogDate() & "[ERROR] Failed to move file " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result), "ERR01")
             End If
 
         End If
@@ -314,7 +306,7 @@ Class MainWindow
         bStopSync.IsEnabled = False
         myTimer.Stop()
         stopped = True
-        lbLog.Items.Insert(0, getCurrentLogDate() & "stop monitoring raw files at " & monitoredfolder)
+        lbLog.Items.Insert(0, getCurrentLogDate() & "STOP monitoring RAW files at " & monitoredfolder)
     End Sub
 
     Private Sub bclearlog_click(sender As Object, e As RoutedEventArgs) Handles bClearLog.Click
@@ -337,82 +329,72 @@ Class MainWindow
 
         lbLog.Items.Insert(0, getCurrentLogDate() & "START monitoring RAW files at " & monitoredfolder)
 
-        If debugMode Then checkFolderPermissions(monitoredfolder)
-
     End Sub
 
     ' FILE MANAGER -----------------------> 
     Private Sub filesManager(myObject As Object, myEventArgs As EventArgs)
         Dispatcher.Invoke(Sub()
                               myTimer.Stop()
-                              If checkNetworkConn() Then
-                                  networkErrorMessageCounter = 0
-                                  If IO.Directory.Exists(monitoredfolder) Then 'Check if local folder exists.
-                                      Dim foundFiles As New ArrayList(Directory.GetFiles(monitoredfolder, "*.raw"))
-                                      If foundFiles.Count Then
-                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Found files to process.")
-                                          Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
-                                          Dim cleanFilesList As ArrayList = getCleanFileList(notInBlackListFiles)
-                                          If cleanFilesList.Count Then
-                                              stopped = False
-                                              If Not bw.IsBusy = True Then
-                                                  Dim filenameToUpload As String = cleanFilesList.Item(0)
-                                                  Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) '------> Open rawFile by Thermo lib
+                              If IO.Directory.Exists(monitoredfolder) Then 'Check if local folder exists.
+                                  Dim foundFiles As New ArrayList(Directory.GetFiles(monitoredfolder, "*.raw"))
+                                  If foundFiles.Count Then
+                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Found files to process.")
+                                      Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
+                                      Dim cleanFilesList As ArrayList = getCleanFileList(notInBlackListFiles)
+                                      If cleanFilesList.Count Then
+                                          stopped = False
+                                          If Not bw.IsBusy = True Then
+                                              Dim filenameToUpload As String = cleanFilesList.Item(0)
+                                              Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) '------> Open rawFile by Thermo lib
 
-                                                  If Not rawFile.HasMsData Then
+                                              If rawFile.HasMsData Then
 
-                                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File has MS data" & filenameToUpload)
-                                                      rawFile.SelectInstrument(instrumentType:=0, 1)
-                                                      Dim serial As String = rawFile.GetInstrumentData().SerialNumber
-                                                      Dim name As String = rawFile.GetInstrumentData().Name.ToString.Replace(" ", "_").ToLower
-                                                      Dim hasMSData As Boolean = rawFile.HasMsData
+                                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File has MS data" & filenameToUpload)
+                                                  rawFile.SelectInstrument(instrumentType:=0, 1)
+                                                  Dim serial As String = rawFile.GetInstrumentData().SerialNumber
+                                                  Dim name As String = rawFile.GetInstrumentData().Name.ToString.Replace(" ", "_").ToLower
+                                                  Dim hasMSData As Boolean = rawFile.HasMsData
 
-                                                      Dim yymm As String = getCurrentMonthFolder()
-                                                      Dim cb_folder As String = ""
+                                                  Dim yymm As String = getCurrentMonthFolder()
+                                                  Dim cb_folder As String = ""
 
-                                                      If cbSubFolder1.SelectedIndex <> -1 Then
-                                                          cb_folder = createBackupFolder(cbSubFolder1.SelectedValue.ToString(), cb_folder, serial, name, yymm)
-                                                      ElseIf cbSubFolder2.SelectedIndex <> -1 Then
-                                                          cb_folder = createBackupFolder(cbSubFolder2.SelectedValue.ToString(), cb_folder, serial, name, yymm)
-                                                      ElseIf cbSubFolder3.SelectedIndex <> -1 Then
-                                                          cb_folder = createBackupFolder(cbSubFolder3.SelectedValue.ToString(), cb_folder, serial, name, yymm)
-                                                      End If
+                                                  If cbSubFolder1.SelectedIndex <> -1 Then
+                                                      cb_folder = createBackupFolder(cbSubFolder1.SelectedValue.ToString(), cb_folder, serial, name, yymm)
+                                                  ElseIf cbSubFolder2.SelectedIndex <> -1 Then
+                                                      cb_folder = createBackupFolder(cbSubFolder2.SelectedValue.ToString(), cb_folder, serial, name, yymm)
+                                                  ElseIf cbSubFolder3.SelectedIndex <> -1 Then
+                                                      cb_folder = createBackupFolder(cbSubFolder3.SelectedValue.ToString(), cb_folder, serial, name, yymm)
+                                                  End If
 
-                                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Backup target folder is: " & cb_folder)
+                                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Backup target folder is: " & cb_folder)
 
-                                                      rawFile.Dispose() '------> Close rawFile by Thermo lib
+                                                  rawFile.Dispose() '------> Close rawFile by Thermo lib
 
-                                                      If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than 2GB
-                                                          'BACKUP file:
-                                                          bw.RunWorkerAsync(New String() {Path.GetFileName(filenameToUpload), filenameToUpload, tbxOutputRootFolder.Text & cb_folder})
-                                                      Else
-                                                          lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] The file " & filenameToUpload & " is greater than 2GB so it won't be uploaded.")
-                                                          myTimer.Start()
-                                                      End If
-
+                                                  If FileLen(filenameToUpload) <= MaxFileSize Then 'Only filesize less or equal than MaxFileSize
+                                                      'BACKUP file:
+                                                      bw.RunWorkerAsync(New String() {Path.GetFileName(filenameToUpload), filenameToUpload, tbxOutputRootFolder.Text & cb_folder})
                                                   Else
-                                                      lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & filenameToUpload & " has not MS data.")
+                                                      showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] File not moved because is too big. The maximum is " & Math.Round(MaxFileSize / 1073741824) & "GB", "ERR01")
                                                       myTimer.Start()
                                                   End If
 
+                                              Else
+                                                  lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] File " & filenameToUpload & " has not MS data.")
+                                                  myTimer.Start()
                                               End If
-                                          Else
-                                              myTimer.Start()
+
                                           End If
                                       Else
-                                          If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] No files to process.")
-                                          myTimer.Start() 'No files to process.
+                                          myTimer.Start()
                                       End If
                                   Else
-                                      myTimer.Start()
+                                      If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] No files to process.")
+                                      myTimer.Start() 'No files to process.
                                   End If
                               Else
-                                  If networkErrorMessageCounter < 3 Then
-                                      lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Network connection not available. Please check.")
-                                      networkErrorMessageCounter = networkErrorMessageCounter + 1
-                                  End If
                                   myTimer.Start()
                               End If
+
                           End Sub)
     End Sub
 
@@ -441,7 +423,6 @@ Class MainWindow
         Return cb_folder
 
     End Function
-
 
     Private Function IsFileInUse(filename As String) As Boolean
         Dim Locked As Boolean = False

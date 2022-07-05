@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBackupper"
         mc:Ignorable="d"
-        Title="RAWocop 0.0.1" Height="550.842" Width="754.613">
+        Title="RAWocop 1.0.0" Height="550.842" Width="754.613">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="30*"/>
@@ -43,7 +43,7 @@
         <Button x:Name="buttonTestConn" TabIndex="4" Content="Test connectivity" HorizontalAlignment="Left" Margin="400,14,0,0" VerticalAlignment="Top" Width="122" Height="21" Visibility="Hidden" Grid.Row="4" Grid.Column="3" Grid.RowSpan="2"/>
         <TextBlock x:Name="tbOutputRootFolder" HorizontalAlignment="Left" Margin="240,9.75,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="90" Height="17" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"><Run Text="and store them "/><Run Text="to"/></TextBlock>
         <TextBox x:Name="tbxOutputRootFolder" TabIndex="4" HorizontalAlignment="Left" Margin="335,6,0,10" TextWrapping="Wrap" Text="" Width="185" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"/>
-        <Button x:Name="bOutputFolder" TabIndex="5" Content="backup folder" HorizontalAlignment="Left" Margin="526,7,0,0" VerticalAlignment="Top" Width="75" Height="22" Grid.Column="3" RenderTransformOrigin="0.4,0.545" Grid.RowSpan="3" Grid.Row="1"/>
+        <Button x:Name="bOutputFolder" TabIndex="5" Content="Backup folder" HorizontalAlignment="Left" Margin="526,7,0,0" VerticalAlignment="Top" Width="75" Height="22" Grid.Column="3" RenderTransformOrigin="0.4,0.545" Grid.RowSpan="3" Grid.Row="1"/>
         <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="32" Margin="22,23,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="4" Grid.Row="4" Grid.RowSpan="5"/>
         <TextBlock x:Name="textBlock_Copy1" HorizontalAlignment="Left" Margin="7,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="1" FontSize="30" Grid.ColumnSpan="2"/>
         <ComboBox x:Name="cbSubFolder1" TabIndex="3" HorizontalAlignment="Left" Margin="11,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="2" Grid.Row="5" Grid.ColumnSpan="2" Grid.RowSpan="3"/>
