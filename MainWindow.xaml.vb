@@ -54,6 +54,7 @@ Class MainWindow
         bStartSync.IsEnabled = False
         bStopSync.IsEnabled = False
         bClearLog.IsEnabled = False
+        bOutputFolder.IsEnabled = False
         bCopyLogToClipboard.IsEnabled = False
         cbDiscardQCloudFiles.IsChecked = True
         tbxInputFolderSummary.IsEnabled = False
@@ -92,6 +93,7 @@ Class MainWindow
         If dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
             tbxInputFolder.Text = dialog.SelectedPath
             tbxInputFolderSummary.Text = dialog.SelectedPath
+            bOutputFolder.IsEnabled = True
         End If
     End Sub
 
@@ -103,10 +105,14 @@ Class MainWindow
         If dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
             tbxOutputRootFolder.Text = dialog.SelectedPath
             tbxOutputFolderSummary.Text = dialog.SelectedPath
-            bStartSync.IsEnabled = True
-            bStopSync.IsEnabled = True
-            bClearLog.IsEnabled = True
-            bCopyLogToClipboard.IsEnabled = True
+            If tbxInputFolder.Text = tbxOutputRootFolder.Text Then
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Input path must not be the same as output path.")
+            Else
+                bStartSync.IsEnabled = True
+                bStopSync.IsEnabled = True
+                bClearLog.IsEnabled = True
+                bCopyLogToClipboard.IsEnabled = True
+            End If
         End If
     End Sub
 
