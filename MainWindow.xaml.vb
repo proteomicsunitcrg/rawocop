@@ -198,7 +198,7 @@ Class MainWindow
                 Try
                     rawFile.SelectInstrument(instrumentType:=0, 1)
                     If filereader.Length > MinFileSize Then ' Check that the file has a minimum size
-                        If (file.ToString.Contains("QC01") Or file.ToString.Contains("QC02") Or file.ToString.Contains("QC03")) And Not excludeQCloudFile Then ' Does not includes QCrawler files
+                        If (Path.GetFileName(file).Contains("QC01") Or Path.GetFileName(file).Contains("QC02") Or Path.GetFileName(file).Contains("QC03") And Not excludeQCloudFile) Then ' Does not includes QCrawler files
                             showRecurrentErrorMessage(getCurrentLogDate() & "[WARNING] File not moved because is a QCloud file (QC01 or QC02). File: " & file, "ERR01")
                             If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] File not moved because is a QCloud file (QC01 or QC02). File: " & file)
                         Else
@@ -329,6 +329,13 @@ Class MainWindow
         bStopSync.IsEnabled = True
         bCopyLogToClipboard.IsEnabled = True
         bClearLog.IsEnabled = True
+        cbSubFolder1.IsEnabled = False
+        cbSubFolder2.IsEnabled = False
+        cbSubFolder3.IsEnabled = False
+        bInputfolder.IsEnabled = False
+        bOutputFolder.IsEnabled = False
+        cbEnableBackupSubfolders.IsEnabled = False
+        cbDiscardQCloudFiles.IsEnabled = False
 
         ' Sets the timer interval (millisec).
         myTimer.Start()
@@ -337,7 +344,7 @@ Class MainWindow
 
     End Sub
 
-    ' FILE MANAGER -----------------------> 
+    ' File manager 
     Private Sub filesManager(myObject As Object, myEventArgs As EventArgs)
         Dispatcher.Invoke(Sub()
                               myTimer.Stop()
@@ -350,6 +357,7 @@ Class MainWindow
                                       If cleanFilesList.Count Then
                                           stopped = False
                                           If Not bw.IsBusy = True Then
+
                                               Dim filenameToUpload As String = cleanFilesList.Item(0)
                                               Dim rawFile As IRawDataPlus = RawFileReaderAdapter.FileFactory(filenameToUpload) '------> Open rawFile by Thermo lib
 
@@ -366,9 +374,13 @@ Class MainWindow
 
                                                   If cbSubFolder1.SelectedIndex <> -1 Then
                                                       cb_folder = createBackupFolder(cbSubFolder1.SelectedValue.ToString(), cb_folder, serial, name, yymm)
-                                                  ElseIf cbSubFolder2.SelectedIndex <> -1 Then
+                                                  End If
+
+                                                  If cbSubFolder2.SelectedIndex <> -1 Then
                                                       cb_folder = createBackupFolder(cbSubFolder2.SelectedValue.ToString(), cb_folder, serial, name, yymm)
-                                                  ElseIf cbSubFolder3.SelectedIndex <> -1 Then
+                                                  End If
+
+                                                  If cbSubFolder3.SelectedIndex <> -1 Then
                                                       cb_folder = createBackupFolder(cbSubFolder3.SelectedValue.ToString(), cb_folder, serial, name, yymm)
                                                   End If
 
