@@ -63,6 +63,7 @@ Class MainWindow
         tbxInputFolderSummary.Text = tbxInputFolder.Text
 
         ' Debug mode:
+        If debugMode Then minInterval = "5000" 'millisec (5 sec)
         If debugMode Then bStartSync.IsEnabled = True
         If debugMode Then bStopSync.IsEnabled = True
         If debugMode Then bClearLog.IsEnabled = True
@@ -363,10 +364,13 @@ Class MainWindow
 
                               myTimer.Stop()
                               Dim foundFiles As New ArrayList(Directory.GetFiles(monitoredfolder, "*.raw"))
+                              If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG] Found files at monitored folder: " & foundFiles.ToString)
+
                               If foundFiles.Count Then
 
                                   Dim notInBlackListFiles As ArrayList = getFilesNotInBlackList(foundFiles)
                                   Dim cleanFilesList As ArrayList = getCleanFileList(notInBlackListFiles)
+                                  If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG] Cleaned file list: " & cleanFilesList.ToString)
 
                                   If cleanFilesList.Count Then
 
