@@ -64,7 +64,7 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>robocop21.ico</ApplicationIcon>
+    <ApplicationIcon>robocop.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="OpenMcdf, Version=2.2.1.9, Culture=neutral, PublicKeyToken=fdbb1629d7c00800, processorArchitecture=MSIL">
@@ -188,7 +188,7 @@
     <Resource Include="robocop21.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="robocop21.ico" />
+    <Resource Include="robocop.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>
