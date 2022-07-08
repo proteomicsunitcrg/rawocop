@@ -13,3 +13,7 @@
 ## Detailed user manual
 
 Please refer to our project wiki at https://github.com/proteomicsunitcrg/rawocop/wiki
+
+## Acknowledgements
+
+We are grateful to Jim Shofstahl (Thermo Fisher Scientific) for providing the RawFileReader .NET assembly and .Net example code.
