@@ -72,7 +72,6 @@ Class MainWindow
         If debugMode Then lbLog.Items.Insert(0, getCurrentLogDate() & "[DEBUG MODE] Handlers added (filesManager, DoWork And RunWorkerCompleted.")
         If debugMode Then tbxInputFolder.Text = "C:\rolivella\XCalibur\data"
         If debugMode Then tbxOutputRootFolder.Text = "C:\rolivella\XCalibur\backup"
-        'If debugMode Then tbxOutputFolderSummary.Text = "C:\rolivella\XCalibur\backup"
         'If debugMode Then tbxOutputRootFolder.Text = "Z:\data\orbitrap_xl\qcml"
 
         ' Unit Tests: 

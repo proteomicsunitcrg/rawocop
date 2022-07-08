@@ -4,11 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="RAWocop 1.0.0" Height="550.842" Width="754.613">
+        Title="rawocop 1.0.0" Height="550.842" Width="754.613">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="30*"/>
-            <ColumnDefinition Width="20*"/>
+            <ColumnDefinition Width="13*"/>
+            <ColumnDefinition Width="17*"/>
+            <ColumnDefinition Width="4*"/>
+            <ColumnDefinition Width="16*"/>
             <ColumnDefinition Width="60*"/>
             <ColumnDefinition Width="637*"/>
         </Grid.ColumnDefinitions>
@@ -24,41 +26,41 @@
             <RowDefinition Height="5*"/>
             <RowDefinition Height="409*"/>
         </Grid.RowDefinitions>
-        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="274" Margin="22,115,0,0" VerticalAlignment="Top" Width="696" Grid.Row="9" Grid.ColumnSpan="4"/>
-        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="31" Margin="22,1.75,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="4" Grid.RowSpan="3" Grid.Row="1"/>
-        <TextBox x:Name="tbxInputFolder" TabIndex="4" HorizontalAlignment="Left" Margin="10,6,0,10" TextWrapping="Wrap" Text="" Width="145" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"/>
-        <TextBlock x:Name="textBlockMoveFrom" HorizontalAlignment="Left" Margin="2,10.75,0,0" TextWrapping="Wrap" Text="Move files from" VerticalAlignment="Top" Grid.ColumnSpan="3" Width="88" Height="17" Grid.RowSpan="3" Grid.Column="1" Grid.Row="1"/>
-        <Button x:Name="bStartSync" TabIndex="6" Content="START backuping!&#xD;&#xA;" HorizontalAlignment="Left" Margin="445,163,0,0" VerticalAlignment="Top" Width="156" Height="59" Grid.Row="9" Grid.Column="3"/>
-        <Button x:Name="bStopSync" Content="Stop" HorizontalAlignment="Left" Margin="445,250,0,0" VerticalAlignment="Top" Width="156" Grid.Row="9" Height="28" Grid.Column="3"/>
-        <ListBox x:Name="lbLog" HorizontalAlignment="Left" Height="212" Margin="11,163,0,0" VerticalAlignment="Top" Width="507" Grid.Row="9" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Grid.ColumnSpan="3" Grid.Column="1"/>
-        <TextBlock x:Name="tbLog" HorizontalAlignment="Left" Margin="10,131,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="9" Grid.ColumnSpan="3" Grid.Column="1"><Run Text="Lo"/><Run Text="g"/></TextBlock>
-        <Button x:Name="bClearLog" Content="Clear" HorizontalAlignment="Left" Margin="30,125,0,0" VerticalAlignment="Top" Width="75" Grid.Row="9" Height="26" Grid.Column="2" Grid.ColumnSpan="2"/>
-        <Button x:Name="bInputfolder" TabIndex="5" Content="Input folder" HorizontalAlignment="Left" Margin="160,5.75,0,0" VerticalAlignment="Top" Width="75" Height="22" Grid.Column="3" RenderTransformOrigin="0.4,0.545" Grid.RowSpan="3" Grid.Row="1"/>
-        <Label x:Name="label" Content="Root folders location&#xA;" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="128" Grid.RowSpan="3"/>
-        <Label x:Name="label_Copy" Content="Monitoring panel" HorizontalAlignment="Left" Margin="17,92,0,0" VerticalAlignment="Top" Grid.Row="9" Grid.ColumnSpan="3"/>
-        <Button x:Name="bCopyLogToClipboard" Content="Copy Log to Clipboard" HorizontalAlignment="Left" Margin="55,125,0,0" VerticalAlignment="Top" Width="123" Grid.Row="9" Height="26" Grid.Column="3"/>
-        <TextBlock x:Name="tbTitle" HorizontalAlignment="Left" Margin="440,285,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="9" Height="40" FontSize="27" FontFamily="Serif" Grid.Column="3"><Run Text=" "/><Run Text="  RAWocop"/></TextBlock>
-        <Button x:Name="buttonTestConn" TabIndex="4" Content="Test connectivity" HorizontalAlignment="Left" Margin="400,14,0,0" VerticalAlignment="Top" Width="122" Height="21" Visibility="Hidden" Grid.Row="4" Grid.Column="3" Grid.RowSpan="2"/>
-        <TextBlock x:Name="tbOutputRootFolder" HorizontalAlignment="Left" Margin="240,9.75,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="90" Height="17" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"><Run Text="and store them "/><Run Text="to"/></TextBlock>
-        <TextBox x:Name="tbxOutputRootFolder" TabIndex="4" HorizontalAlignment="Left" Margin="335,6,0,10" TextWrapping="Wrap" Text="" Width="185" Grid.Column="3" Grid.RowSpan="3" Grid.Row="1"/>
-        <Button x:Name="bOutputFolder" TabIndex="5" Content="Backup folder" HorizontalAlignment="Left" Margin="526,7,0,0" VerticalAlignment="Top" Width="75" Height="22" Grid.Column="3" RenderTransformOrigin="0.4,0.545" Grid.RowSpan="3" Grid.Row="1"/>
-        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="32" Margin="22,23,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="4" Grid.Row="4" Grid.RowSpan="5"/>
-        <TextBlock x:Name="textBlock_Copy1" HorizontalAlignment="Left" Margin="7,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="1" FontSize="30" Grid.ColumnSpan="2"/>
-        <ComboBox x:Name="cbSubFolder1" TabIndex="3" HorizontalAlignment="Left" Margin="11,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="2" Grid.Row="5" Grid.ColumnSpan="2" Grid.RowSpan="3"/>
-        <ComboBox x:Name="cbSubFolder2" TabIndex="3" HorizontalAlignment="Left" Margin="106,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="3" Grid.Row="5" Grid.RowSpan="3"/>
-        <ComboBox x:Name="cbSubFolder3" TabIndex="3" HorizontalAlignment="Left" Margin="253,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="3" Grid.Row="5" Grid.RowSpan="3"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="274" Margin="9,115,0,0" VerticalAlignment="Top" Width="696" Grid.Row="9" Grid.ColumnSpan="5" Grid.Column="1"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="31" Margin="9,2,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="5" Grid.RowSpan="3" Grid.Row="1" Grid.Column="1"/>
+        <TextBox x:Name="tbxInputFolder" TabIndex="4" HorizontalAlignment="Left" Margin="10,6,0,10" TextWrapping="Wrap" Text="" Width="145" Grid.Column="5" Grid.RowSpan="3" Grid.Row="1"/>
+        <TextBlock x:Name="textBlockMoveFrom" HorizontalAlignment="Left" Margin="2,11,0,0" TextWrapping="Wrap" Text="Move files from" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="88" Height="17" Grid.RowSpan="3" Grid.Column="2" Grid.Row="1"/>
+        <Button x:Name="bStartSync" TabIndex="6" Content="START backuping!&#xD;&#xA;" HorizontalAlignment="Left" Margin="445,163,0,0" VerticalAlignment="Top" Width="156" Height="59" Grid.Row="9" Grid.Column="5"/>
+        <Button x:Name="bStopSync" Content="Stop" HorizontalAlignment="Left" Margin="445,250,0,0" VerticalAlignment="Top" Width="156" Grid.Row="9" Height="28" Grid.Column="5"/>
+        <ListBox x:Name="lbLog" HorizontalAlignment="Left" Height="212" Margin="7,163,0,0" VerticalAlignment="Top" Width="507" Grid.Row="9" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Grid.ColumnSpan="3" Grid.Column="3"/>
+        <TextBlock x:Name="tbLog" HorizontalAlignment="Left" Margin="6,131,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="9" Grid.ColumnSpan="3" Grid.Column="3"><Run Text="Lo"/><Run Text="g"/></TextBlock>
+        <Button x:Name="bClearLog" Content="Clear" HorizontalAlignment="Left" Margin="30,125,0,0" VerticalAlignment="Top" Width="75" Grid.Row="9" Height="26" Grid.Column="4" Grid.ColumnSpan="2"/>
+        <Button x:Name="bInputfolder" TabIndex="5" Content="Input folder" HorizontalAlignment="Left" Margin="160,6,0,0" VerticalAlignment="Top" Width="75" Height="22" Grid.Column="5" RenderTransformOrigin="0.4,0.545" Grid.RowSpan="3" Grid.Row="1"/>
+        <Label x:Name="label" Content="Root folders location&#xA;" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Width="128" Grid.RowSpan="3" Grid.Column="1"/>
+        <Label x:Name="label_Copy" Content="Monitoring panel" HorizontalAlignment="Left" Margin="4,92,0,0" VerticalAlignment="Top" Grid.Row="9" Grid.ColumnSpan="4" Grid.Column="1"/>
+        <Button x:Name="bCopyLogToClipboard" Content="Copy Log to Clipboard" HorizontalAlignment="Left" Margin="55,125,0,0" VerticalAlignment="Top" Width="123" Grid.Row="9" Height="26" Grid.Column="5"/>
+        <TextBlock x:Name="tbTitle" HorizontalAlignment="Left" Margin="440,285,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="154" Grid.Row="9" Height="40" FontSize="27" FontFamily="Serif" Grid.Column="5"><Run Text=" "/><Run Text="  "/><Run Text=" "/><Run Text=" "/><Run Text="r"/><Run Text="aw"/><Run Text="ocop"/></TextBlock>
+        <Button x:Name="buttonTestConn" TabIndex="4" Content="Test connectivity" HorizontalAlignment="Left" Margin="400,14,0,0" VerticalAlignment="Top" Width="122" Height="21" Visibility="Hidden" Grid.Row="4" Grid.Column="5" Grid.RowSpan="2"/>
+        <TextBlock x:Name="tbOutputRootFolder" HorizontalAlignment="Left" Margin="240,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="90" Height="17" Grid.Column="5" Grid.RowSpan="3" Grid.Row="1"><Run Text="and store them "/><Run Text="to"/></TextBlock>
+        <TextBox x:Name="tbxOutputRootFolder" TabIndex="4" HorizontalAlignment="Left" Margin="335,6,0,10" TextWrapping="Wrap" Text="" Width="185" Grid.Column="5" Grid.RowSpan="3" Grid.Row="1"/>
+        <Button x:Name="bOutputFolder" TabIndex="5" Content="Backup folder" HorizontalAlignment="Left" Margin="526,7,0,0" VerticalAlignment="Top" Width="75" Height="22" Grid.Column="5" RenderTransformOrigin="0.4,0.545" Grid.RowSpan="3" Grid.Row="1"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="32" Margin="9,23,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="5" Grid.Row="4" Grid.RowSpan="5" Grid.Column="1"/>
+        <TextBlock x:Name="textBlock_Copy1" HorizontalAlignment="Left" Margin="3,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30" Grid.ColumnSpan="2"/>
+        <ComboBox x:Name="cbSubFolder1" TabIndex="3" HorizontalAlignment="Left" Margin="11,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="4" Grid.Row="5" Grid.ColumnSpan="2" Grid.RowSpan="3"/>
+        <ComboBox x:Name="cbSubFolder2" TabIndex="3" HorizontalAlignment="Left" Margin="106,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="5" Grid.Row="5" Grid.RowSpan="3"/>
+        <ComboBox x:Name="cbSubFolder3" TabIndex="3" HorizontalAlignment="Left" Margin="253,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="5" Grid.Row="5" Grid.RowSpan="3"/>
         <!--<ComboBox x:Name="cbSubFolder4" TabIndex="3" HorizontalAlignment="Left" Margin="405,3,0,0" VerticalAlignment="Top" Width="115" Height="22" Grid.Column="3" Grid.Row="5" Grid.RowSpan="3"/>-->
-        <Label x:Name="lSummary" Content="Summary" HorizontalAlignment="Left" Margin="19,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" Grid.Row="8" Width="157" Grid.RowSpan="2"/>
-        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="80" Margin="22,15,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="4" Grid.Row="9"/>
-        <TextBlock x:Name="tbInputFolderSummary" HorizontalAlignment="Left" Margin="0,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.ColumnSpan="3" Width="88" Height="17" Grid.Row="9" Grid.Column="1"><Run Text="Mov"/><Run Text="e"/><Run Text=" files from "/></TextBlock>
-        <TextBox x:Name="tbxInputFolderSummary" TabIndex="4" HorizontalAlignment="Left" Margin="10,25,0,354" TextWrapping="Wrap" Text="" Width="595" Grid.Column="3" Grid.Row="9"/>
-        <TextBlock x:Name="tbOutputFolder" HorizontalAlignment="Left" Margin="0,65,0,0" TextWrapping="Wrap" Text="and store them to " VerticalAlignment="Top" Width="95" Height="17" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="3"/>
-        <TextBox x:Name="tbxOutputFolderSummary" TabIndex="4" HorizontalAlignment="Left" Margin="10,60,0,320" TextWrapping="Wrap" Text="" Width="595" Grid.Column="3" Grid.Row="9"/>
-        <CheckBox x:Name="cbEnableBackupSubfolders" Content="Enable backup subfolders" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="22,2,0,0" Grid.Row="4" Grid.ColumnSpan="4"/>
-        <TextBlock x:Name="textBlock_Copy2" HorizontalAlignment="Left" Margin="80,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>
-        <TextBlock x:Name="textBlock_Copy3" HorizontalAlignment="Left" Margin="230,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>
+        <Label x:Name="lSummary" Content="Summary" HorizontalAlignment="Left" Margin="6,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" Grid.Row="8" Width="157" Grid.RowSpan="2" Grid.Column="1"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="80" Margin="9,15,0,0" VerticalAlignment="Top" Width="696" Grid.ColumnSpan="5" Grid.Row="9" Grid.Column="1"/>
+        <TextBlock x:Name="tbInputFolderSummary" HorizontalAlignment="Left" Margin="0,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.ColumnSpan="4" Width="88" Height="17" Grid.Row="9" Grid.Column="2"><Run Text="Mov"/><Run Text="e"/><Run Text=" files from "/></TextBlock>
+        <TextBox x:Name="tbxInputFolderSummary" TabIndex="4" HorizontalAlignment="Left" Margin="10,25,0,354" TextWrapping="Wrap" Text="" Width="595" Grid.Column="5" Grid.Row="9"/>
+        <TextBlock x:Name="tbOutputFolder" HorizontalAlignment="Left" Margin="0,65,0,0" TextWrapping="Wrap" Text="to folder" VerticalAlignment="Top" Width="85" Height="17" Grid.Row="9" Grid.Column="2" Grid.ColumnSpan="4"/>
+        <TextBox x:Name="tbxOutputFolderSummary" TabIndex="4" HorizontalAlignment="Left" Margin="10,60,0,320" TextWrapping="Wrap" Text="" Width="595" Grid.Column="5" Grid.Row="9"/>
+        <CheckBox x:Name="cbEnableBackupSubfolders" Content="Enable backup subfolders" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="9,2,0,0" Grid.Row="4" Grid.ColumnSpan="5" Grid.Column="1"/>
+        <TextBlock x:Name="textBlock_Copy2" HorizontalAlignment="Left" Margin="80,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="5" FontSize="30"/>
+        <TextBlock x:Name="textBlock_Copy3" HorizontalAlignment="Left" Margin="230,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="5" FontSize="30"/>
         <!--<TextBlock x:Name="textBlock_Copy4" HorizontalAlignment="Left" Margin="382,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>-->
-        <CheckBox x:Name="cbDiscardQCloudFiles" Content="Discard QCloud files" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="70,3,0,0" Grid.Row="4" Grid.Column="3"/>
-        <Image Source="/robocop21.png" Grid.Column="3" Margin="470,315,57,0" Grid.Row="9" Height="60" VerticalAlignment="Top" />
+        <CheckBox x:Name="cbDiscardQCloudFiles" Content="Discard QCloud files" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="70,3,0,0" Grid.Row="4" Grid.Column="5"/>
+        <Image Source="/robocop21.png" Grid.Column="5" Margin="470,315,57,0" Grid.Row="9" Height="60" VerticalAlignment="Top" />
     </Grid>
 </Window>
