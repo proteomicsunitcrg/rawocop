@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="rawocop 1.0.0" Height="550.842" Width="754.613">
+        Title="rawocop 1.0.1" Height="550.842" Width="754.613">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="13*"/>
@@ -62,5 +62,6 @@
         <!--<TextBlock x:Name="textBlock_Copy4" HorizontalAlignment="Left" Margin="382,23,0,0" TextWrapping="Wrap" Text="\" VerticalAlignment="Top" Width="18" Height="26" Grid.Row="4" Grid.RowSpan="4" Grid.Column="3" FontSize="30"/>-->
         <CheckBox x:Name="cbDiscardQCloudFiles" Content="Discard QCloud files" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="70,3,0,0" Grid.Row="4" Grid.Column="5"/>
         <Image Source="/robocop21.png" Grid.Column="5" Margin="470,315,57,0" Grid.Row="9" Height="60" VerticalAlignment="Top" />
+        <CheckBox x:Name="cbAppendDatabaseToQsample" Content="Append database to QSample" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="201,3,0,0" Grid.Row="4" Grid.Column="5"/>
     </Grid>
 </Window>

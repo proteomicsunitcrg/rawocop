@@ -26,7 +26,9 @@ Class MainWindow
     Dim excludeQCloudFile As Boolean = False
     Dim rawFileInstrumentSerial As String = ""
     Dim rawFileInstrumentName As String = ""
+    Dim QsampleDatabase As String = ""
     Dim firstMonitoredFolderCheck As Boolean = True
+    Dim AppendQSampleDBtoFilename As Boolean = False
     Dim cleanFilesList As New ArrayList()
 
     Public Sub New()
@@ -137,6 +139,14 @@ Class MainWindow
         excludeQCloudFile = False
     End Sub
 
+    Private Sub cbAppendDatabaseToQsample_Checked(sender As Object, e As RoutedEventArgs) Handles cbAppendDatabaseToQsample.Checked
+        AppendQSampleDBtoFilename = True
+    End Sub
+
+    Private Sub cbAppendDatabaseToQsample_Unchecked(sender As Object, e As RoutedEventArgs) Handles cbAppendDatabaseToQsample.Unchecked
+        AppendQSampleDBtoFilename = False
+    End Sub
+
     Private Sub cbEnableBackupSubfolders_Checked(sender As Object, e As RoutedEventArgs) Handles cbEnableBackupSubfolders.Checked
         If cbEnableBackupSubfolders.IsChecked Then
             cbSubFolder1.IsEnabled = True
@@ -206,8 +216,11 @@ Class MainWindow
                                 rawFile.SelectInstrument(instrumentType:=0, 1)
                                 rawFileInstrumentSerial = rawFile.GetInstrumentData().SerialNumber
                                 rawFileInstrumentName = rawFile.GetInstrumentData().Name.ToString.Replace(" ", "_").ToLower
+                                If AppendQSampleDBtoFilename Then
+                                    QsampleDatabase = rawFile.SampleInformation.UserText.GetValue(4)
+                                End If
                                 CleanedListOfFiles.Add(file) 'If RAW file pass all filters, then is a valid file
-                            Else
+                                Else
                                 lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] File without MS data: " & file)
                                 BlackListOfFiles.Add(Path.GetFileName(file))
                             End If
@@ -275,6 +288,10 @@ Class MainWindow
             If (Not System.IO.Directory.Exists(targetOnlyfolder)) Then
                 System.IO.Directory.CreateDirectory(targetOnlyfolder)
             End If
+            If AppendQSampleDBtoFilename Then
+                targetFullPath = targetFullPath & "." & QsampleDatabase
+
+            End If
             If File.Exists(targetFullPath) Then
                 'File.Delete(targetFullPath)
                 lbLog.Items.Insert(0, getCurrentLogDate() & "[WARNING] Repeated file at destination folder! So it will not be moved.")
@@ -304,11 +321,17 @@ Class MainWindow
 
             Dim uploadResultCodeStorage = uploadresultcode.Item(0)
 
+            Dim filename As String = Path.GetFileName(e.Result)
+            If AppendQSampleDBtoFilename Then
+                filename = filename & "." & QsampleDatabase
+
+            End If
+
             If uploadResultCodeStorage Is "ST-OK" Then
-                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File successfully moved to " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & ":) File successfully moved to " & Path.GetDirectoryName(e.Result) & "\" & filename)
             ElseIf uploadResultCodeStorage Is "ST-ERR" Then
                 BlackListOfFiles.Add(Path.GetFileName(e.Result))
-                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Failed to move file " & Path.GetDirectoryName(e.Result) & "\" & Path.GetFileName(e.Result))
+                lbLog.Items.Insert(0, getCurrentLogDate() & "[ERROR] Failed to move file " & Path.GetDirectoryName(e.Result) & "\" & filename)
             End If
 
         End If
@@ -349,6 +372,7 @@ Class MainWindow
         bOutputFolder.IsEnabled = False
         cbEnableBackupSubfolders.IsEnabled = False
         cbDiscardQCloudFiles.IsEnabled = False
+        cbAppendDatabaseToQsample.IsEnabled = False
 
         ' Starts timer
         myTimer.Start()
