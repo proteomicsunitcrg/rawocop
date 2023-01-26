@@ -8,7 +8,7 @@
 - Robust: works for weeks without any crash and even with old Windows versions. 
 
 ## That's all, no tabs, no hidden menus. Simple, right?
-![rawocop_screenshot1](https://user-images.githubusercontent.com/1679820/177956147-08ebbd6d-6be7-465b-8d76-f0e0c621b8df.png)
+![2023-01-26 14_57_43-Window](https://user-images.githubusercontent.com/1679820/214862656-9d58343c-987c-4c6b-b04e-abd46a396bf1.png)
 
 ## Detailed user manual
 
