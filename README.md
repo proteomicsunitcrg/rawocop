@@ -2,6 +2,9 @@
 ![rawocop_grey](https://user-images.githubusercontent.com/1679820/177815046-9d224060-7057-4486-973c-748f18a97c46.png)
 
 # Smart, light, easy and robust Thermo RAW files backup program
+> **Notice (2026-10):** Development of rawocop has moved to an internal CRG repository (CRG staff only - not accessible from outside).
+> This GitHub repository is **frozen** and kept as a public archive: to download/install a version, see the [Releases](https://github.com/proteomicsunitcrg/rawocop/releases) (clean snapshot per release).
+
 - Smart: rawocop apply a series of filters on the files and decide whether to perform the backup or not. It also automatically creates a backup folder structure according the instrument type, serial number and current year and month.  
 - Light: it's disk size is only 4.5MB and uses a maximum of 200MB of RAM, so it can be safely run in any acquisition computer, either with a new or old Windows installed.  
 - Fast: super easy installation and configuration. 
